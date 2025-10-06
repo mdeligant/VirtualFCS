@@ -23,7 +23,7 @@ model FuelCellSystem
   Real Power_stack(unit = "W") "Power delivered from the FC stack";
   Real Power_BOP(unit = "W") "Power consumed by the BOP components";
   Real eta_FC_sys(unit = "100") "Fuel cell system efficiency";
-  VirtualFCS.Electrochemical.Hydrogen.FuelCellStack fuelCellStack(H_FC_stack = H_FC_stack, I_rated_FC_stack = I_rated_FC_stack, L_FC_stack = L_FC_stack, W_FC_stack = W_FC_stack, m_FC_stack = m_FC_stack, vol_FC_stack = vol_FC_stack) annotation(
+  VirtualFCS.Electrochemical.Hydrogen.FuelCellStackWithGasThermalFlow fuelCellStack(H_FC_stack = H_FC_stack, I_rated_FC_stack = I_rated_FC_stack, L_FC_stack = L_FC_stack, W_FC_stack = W_FC_stack, m_FC_stack = m_FC_stack, vol_FC_stack = vol_FC_stack) annotation(
     Placement(visible = true, transformation(origin = {-1, 10}, extent = {{-26, -26}, {26, 26}}, rotation = 0)));
   Modelica.Electrical.Analog.Interfaces.PositivePin pin_p annotation(
     Placement(visible = true, transformation(origin = {20, 96}, extent = {{-10, -10}, {10, 10}}, rotation = 0), iconTransformation(origin = {50, 90}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
