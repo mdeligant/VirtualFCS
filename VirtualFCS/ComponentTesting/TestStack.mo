@@ -1,8 +1,9 @@
 within VirtualFCS.ComponentTesting;
 
 model TestStack  
+  extends Modelica.Icons.Example;
 
-  // Medium decleration
+  // Medium declaration
   replaceable package Cathode_Medium = Modelica.Media.Air.MoistAir;
   replaceable package Anode_Medium = Modelica.Media.IdealGases.SingleGases.H2 constrainedby Modelica.Media.Interfaces.PartialSimpleIdealGasMedium;
   replaceable package Coolant_Medium = Modelica.Media.Water.ConstantPropertyLiquidWater constrainedby Modelica.Media.Interfaces.PartialMedium;
@@ -11,9 +12,9 @@ model TestStack
     Placement(transformation(origin = {2, -16}, extent = {{-43, -64.5}, {43, 64.5}})));
   Modelica.Fluid.Sources.Boundary_pT H2_pressure_out(nPorts = 1, redeclare package Medium = Anode_Medium, p = 2e5)  annotation(
     Placement(transformation(origin = {-74, -14}, extent = {{-10, -10}, {10, 10}})));
-  Modelica.Fluid.Sources.MassFlowSource_T Source_massflow_H2(nPorts = 1, m_flow = 0.003, redeclare package Medium = Anode_Medium)  annotation(
+  Modelica.Fluid.Sources.MassFlowSource_T Source_massflow_H2(nPorts = 1, m_flow = 0.003, redeclare package Medium = Anode_Medium, T = 293.15)  annotation(
     Placement(transformation(origin = {-68, 26}, extent = {{-10, -10}, {10, 10}})));
-  Modelica.Fluid.Sources.MassFlowSource_T Source_massflow_Air(nPorts = 1, redeclare package Medium = Cathode_Medium, m_flow = 0.25, T = 313.15)  annotation(
+  Modelica.Fluid.Sources.MassFlowSource_T Source_massflow_Air(nPorts = 1, redeclare package Medium = Cathode_Medium, m_flow = 0.25, T = 323.15)  annotation(
     Placement(transformation(origin = {64, 26}, extent = {{10, -10}, {-10, 10}}, rotation = -0)));
   Modelica.Fluid.Sources.Boundary_pT Air_pressure_out(nPorts = 1, p = 2e5, redeclare package Medium = Cathode_Medium)  annotation(
     Placement(transformation(origin = {68, -12}, extent = {{10, -10}, {-10, 10}}, rotation = -0)));
@@ -44,7 +45,92 @@ equation
   connect(fuelCellStack.port_a_Coolant, Source_massflow_water.ports[1]) annotation(
     Line(points = {{-6, -20}, {-6, -46}, {-30, -46}}, color = {0, 127, 255}));
 
-annotation(
+annotation(Documentation(info="<html><head></head><body>
+
+This example tests a fuel cell stack with constant hydrogen, air and cooling supply. The inlet and outlet conditions are presented in the table below.
+
+
+<html>
+<head>
+
+  <title>Simulation Parameters</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background-color: #f9f9f9;
+    }
+    table {
+      width: 80%;
+      border-collapse: collapse;
+      margin: 20px auto;
+      background-color: #fff;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+    caption {
+      font-size: 1.4em;
+      margin-bottom: 10px;
+      font-weight: bold;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      text-align: center;
+      padding: 10px;
+    }
+    th {
+      background-color: #e0f0ff;
+    }
+    tr:nth-child(even) {
+      background-color: #f5faff;
+    }
+  </style>
+</head>
+<body>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Circuit</th>
+        <th>Inlet Temperature (°C)</th>
+        <th>Inlet Flow Rate (kg/s)</th>
+        <th>Outlet Pressure (bar)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Hydrogen</td>
+        <td>20</td>
+        <td>0.003</td>
+        <td>2.0</td>
+      </tr>
+
+      <tr>
+        <td>Air</td>
+        <td>50</td>
+        <td>0.25</td>
+        <td>2.0</td>
+      </tr>
+      
+
+      <tr>
+        <td>Cooling water</td>
+        <td>50</td>
+        <td>1.5</td>
+        <td>2.0</td>
+      </tr>
+
+    </tbody>
+  </table>
+With these conditions, the fuel cell stack is connected to a fixed resistor of 0.7 Ohm, giving an output power of 124 kW with a stack temperature of 81.38 °C.
+
+</body>
+</html>
+
+
+
+
+
+</div></div></body></html>"),
     experiment(StartTime = 0, StopTime = 1000, Tolerance = 1e-06, Interval = 2),
     __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian",
     __OpenModelica_simulationFlags(lv = "LOG_STDOUT,LOG_ASSERT,LOG_STATS", s = "dassl", variableFilter = ".*"));

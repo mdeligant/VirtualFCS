@@ -93,7 +93,7 @@ model FuelCellStackWithMassFlowCorrectionPressureDropHeatTransfer
     Placement(visible = true, transformation(origin = {150, 80}, extent = {{-10, -10}, {10, 10}}, rotation = 0), iconTransformation(origin = {110, 70}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
   Modelica.Fluid.Interfaces.FluidPort_b port_b_Air(redeclare package Medium = Cathode_Medium) annotation(
     Placement(transformation(origin = {148, -140}, extent = {{-10, -10}, {10, 10}}), iconTransformation(origin = {110, -70}, extent = {{-10, -10}, {10, 10}})));
-  Modelica.Fluid.Sources.MassFlowSource_T H2O_source(redeclare package Medium = Cathode_Medium, nPorts = 1, use_m_flow_in = true, use_T_in = false) annotation(
+  Modelica.Fluid.Sources.MassFlowSource_T H2O_source(redeclare package Medium = Cathode_Medium, nPorts = 1, use_m_flow_in = true, use_T_in = true) annotation(
     Placement(transformation(origin = {86, -24}, extent = {{-10, -10}, {10, 10}})));
   Modelica.Fluid.Fittings.TeeJunctionIdeal qWater(redeclare package Medium = Cathode_Medium) annotation(
     Placement(transformation(origin = {120, -24}, extent = {{-10, 10}, {10, -10}}, rotation = -90)));
