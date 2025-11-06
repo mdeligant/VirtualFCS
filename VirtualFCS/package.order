@@ -3,6 +3,7 @@ Examples
 Control
 Electrical
 Electrochemical
+Media
 Fluid
 Thermal
 Powertrains
@@ -10,4 +11,5 @@ SubSystems
 Vehicles
 XInTheLoop
 ComponentTesting
+FuelCellStacksTesting
 Utilities

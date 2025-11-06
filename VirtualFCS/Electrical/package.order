@@ -4,3 +4,4 @@ DC_DC_Converter
 DCConverterSwitch
 DCConverter
 SpeedControlledDCMotor
+SimpleBLDC

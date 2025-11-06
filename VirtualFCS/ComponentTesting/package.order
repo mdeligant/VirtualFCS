@@ -8,4 +8,7 @@ PumpElectricDCTest
 RecirculationBlowerTest
 SubSystemHydrogenControlTest
 ThrottleValveTest
-TestStack
+TestSimpleBLDC
+CentrifugalCompressorTestSpeedAndPressureControl
+CentrifugalCompressorTestMap
+CentrifugalCompressorTest
