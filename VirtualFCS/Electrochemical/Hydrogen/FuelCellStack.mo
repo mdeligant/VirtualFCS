@@ -144,8 +144,13 @@ phi = Cathode_Medium.relativeHumidity(Cathode_Medium.setState_phX(channelCathode
 //*** DEFINE EQUATIONS ***//
 // Redeclare variables
   p_H2 = channelAnode.mediums[1].p;
-//based on mean pressure
-  p_O2 = channelCathode.mediums[1].p*channelCathode.mediums[1].Xi[2];
+//based on log mean pressure
+    p_O2 = (
+ channelCathode.port_a.p*actualStream(channelCathode.port_a.Xi_outflow[2]) - channelCathode.port_b.p*actualStream(channelCathode.port_b.Xi_outflow[2])
+    )/
+Modelica.Math.log(channelCathode.port_a.p*actualStream(channelCathode.port_a.Xi_outflow[2]) - channelCathode.port_b.p*actualStream(channelCathode.port_b.Xi_outflow[2]));
+
+  
 //based on mean pressure and mean concentration in air channel
 // ELECTROCHEMICAL EQUATIONS //
 // Calculate the stack voltage
