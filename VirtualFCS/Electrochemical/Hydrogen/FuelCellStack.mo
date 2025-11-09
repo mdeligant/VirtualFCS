@@ -5,9 +5,8 @@ model FuelCellStack
   // System
   outer Modelica.Fluid.System system "System properties";
   // Medium models
-//  replaceable package Cathode_Medium = Modelica.Media.Air.MoistAir;
+  //  replaceable package Cathode_Medium = Modelica.Media.Air.MoistAir;
   replaceable package Cathode_Medium = Media.MoistAirThreeComponents;
-
   replaceable package Anode_Medium = Modelica.Media.IdealGases.SingleGases.H2 constrainedby Modelica.Media.Interfaces.PartialSimpleIdealGasMedium;
   replaceable package Coolant_Medium = Modelica.Media.Water.ConstantPropertyLiquidWater constrainedby Modelica.Media.Interfaces.PartialMedium;
   //*** DECLARE PARAMETERS ***//
@@ -39,6 +38,7 @@ model FuelCellStack
   Real P_th;
   Real p_H2(min = 0);
   Real p_O2(min = 0);
+  Real p_H2O(min = 0);
   Real p_0 = 100000;
   //*** INSTANTIATE COMPONENTS ***//
   // Efficiencies
@@ -93,7 +93,7 @@ model FuelCellStack
     Placement(transformation(origin = {150, -102}, extent = {{-10, -10}, {10, 10}}), iconTransformation(origin = {110, -70}, extent = {{-10, -10}, {10, 10}})));
   Modelica.Fluid.Pipes.DynamicPipe channelAnode(nParallel = 500, length = 10, diameter = 0.003, redeclare model FlowModel = Modelica.Fluid.Pipes.BaseClasses.FlowModels.DetailedPipeFlow, use_HeatTransfer = true, redeclare model HeatTransfer = Modelica.Fluid.Pipes.BaseClasses.HeatTransfer.LocalPipeFlowHeatTransfer, redeclare package Medium = Anode_Medium, nNodes = 1, modelStructure = Modelica.Fluid.Types.ModelStructure.a_v_b, p_b_start = 2e5) annotation(
     Placement(transformation(origin = {-120, 24}, extent = {{-10, -10}, {10, 10}}, rotation = -90)));
-  Modelica.Fluid.Pipes.DynamicPipe channelCathode(nParallel = 500, length = 10, diameter = 0.004, redeclare model FlowModel = Modelica.Fluid.Pipes.BaseClasses.FlowModels.DetailedPipeFlow, use_HeatTransfer = true, redeclare model HeatTransfer = Modelica.Fluid.Pipes.BaseClasses.HeatTransfer.LocalPipeFlowHeatTransfer, redeclare package Medium = Cathode_Medium, nNodes = 1, modelStructure = Modelica.Fluid.Types.ModelStructure.a_v_b, p_b_start = 2e5) annotation(
+  Modelica.Fluid.Pipes.DynamicPipe channelCathode(nParallel = 500, length = 10, diameter = 0.004, redeclare model FlowModel = Modelica.Fluid.Pipes.BaseClasses.FlowModels.DetailedPipeFlow, use_HeatTransfer = true, redeclare model HeatTransfer = Modelica.Fluid.Pipes.BaseClasses.HeatTransfer.LocalPipeFlowHeatTransfer, redeclare package Medium = Cathode_Medium, nNodes = 1, modelStructure = Modelica.Fluid.Types.ModelStructure.a_v_b, p_a_start = 4e5) annotation(
     Placement(transformation(origin = {120, -74}, extent = {{10, -10}, {-10, 10}}, rotation = 90)));
   Modelica.Thermal.HeatTransfer.Components.ThermalConductor thermalConductor_H2(G = 50000) annotation(
     Placement(transformation(origin = {-92, 24}, extent = {{-10, -10}, {10, 10}})));
@@ -115,22 +115,19 @@ model FuelCellStack
     Placement(transformation(origin = {92, 26}, extent = {{-10, -10}, {10, 10}})));
   Modelica.Thermal.HeatTransfer.Components.HeatCapacitor heatCapacitor(C = Cp_FC_stack*m_FC_stack, T(fixed = true, start = 293.15), der_T(fixed = false)) annotation(
     Placement(transformation(origin = {0, -39}, extent = {{-10, -10}, {10, 10}})));
-  Modelica.Fluid.Sensors.Temperature inlet_air_temperature(redeclare package Medium = Cathode_Medium)  annotation(
+  Modelica.Fluid.Sensors.Temperature inlet_air_temperature(redeclare package Medium = Cathode_Medium) annotation(
     Placement(transformation(origin = {106, 104}, extent = {{10, -10}, {-10, 10}})));
   Modelica.Blocks.Interfaces.RealOutput OER annotation(
     Placement(transformation(origin = {94, -140}, extent = {{-10, -10}, {10, 10}}), iconTransformation(origin = {108, -92}, extent = {{-10, -10}, {10, 10}})));
-
-//Modelica.Media.Water.StandardWater. WaterHumidityProps;
+  //Modelica.Media.Water.StandardWater. WaterHumidityProps;
   Modelica.Blocks.Interfaces.RealOutput phi annotation(
     Placement(transformation(origin = {120, -140}, extent = {{-10, -10}, {10, 10}}), iconTransformation(origin = {108, -112}, extent = {{-10, -10}, {10, 10}})));
   Modelica.Fluid.Sensors.Temperature outlet_air_temperature(redeclare package Medium = Cathode_Medium) annotation(
     Placement(transformation(origin = {59, -91}, extent = {{10, -10}, {-10, 10}})));
   Modelica.Thermal.HeatTransfer.Interfaces.HeatPort_a heatPort annotation(
     Placement(transformation(origin = {29, -34}, extent = {{-10, -10}, {10, 10}}), iconTransformation(origin = {-41, 32}, extent = {{-10, -10}, {10, 10}})));
-
 equation
-phi = Cathode_Medium.relativeHumidity(Cathode_Medium.setState_phX(channelCathode.port_b.p,channelCathode.port_b.h_outflow,channelCathode.port_b.Xi_outflow));
-
+  phi = Cathode_Medium.relativeHumidity(Cathode_Medium.setState_phX(channelCathode.port_b.p, channelCathode.port_b.h_outflow, channelCathode.port_b.Xi_outflow));
   OER = -port_a_Air.m_flow*inStream(qO2.port_1.Xi_outflow[2])/O2_mflow.y;
 //Air extraction based on oxygen need
   O2_sink.m_flow_in = O2_mflow.y/inStream(qO2.port_1.Xi_outflow[2]);
@@ -144,17 +141,18 @@ phi = Cathode_Medium.relativeHumidity(Cathode_Medium.setState_phX(channelCathode
 //*** DEFINE EQUATIONS ***//
 // Redeclare variables
   p_H2 = channelAnode.mediums[1].p;
-//based on log mean pressure
-    p_O2 = (
- channelCathode.port_a.p*actualStream(channelCathode.port_a.Xi_outflow[2]) - channelCathode.port_b.p*actualStream(channelCathode.port_b.Xi_outflow[2])
-    )/
-Modelica.Math.log(channelCathode.port_a.p*actualStream(channelCathode.port_a.Xi_outflow[2]) - channelCathode.port_b.p*actualStream(channelCathode.port_b.Xi_outflow[2]));
-
   
-//based on mean pressure and mean concentration in air channel
+  //average activityies of O2 and H2O based on average pressure x concentration in air cathode channel
+
+  p_H2O =(channelCathode.port_a.p*inStream(channelCathode.port_a.Xi_outflow[2]) + channelCathode.port_b.p*actualStream(channelCathode.port_b.Xi_outflow[2]))/2;
+
+p_O2 =(channelCathode.port_a.p*inStream(channelCathode.port_a.Xi_outflow[1]) + channelCathode.port_b.p*actualStream(channelCathode.port_b.Xi_outflow[1]))/2;
+
+
+
 // ELECTROCHEMICAL EQUATIONS //
 // Calculate the stack voltage
-  potentialSource.v = N_FC_stack*(1.229 - R*temperatureSensor.T/(2*F)*log(1/(p_H2/p_0*(p_O2/p_0)^0.5)) - b_1_FC_stack*log10((abs(currentSensor.i) + i_x_FC_stack)/i_0_FC_stack) + b_2_FC_stack*log10(1 - (abs(currentSensor.i) + i_x_FC_stack)/i_L_FC_stack));
+  potentialSource.v = N_FC_stack*(1.229 - R*temperatureSensor.T/(2*F)*log(1/(p_H2/p_0*(p_O2/p_0)^0.5)/(p_H2O/p_0)) - b_1_FC_stack*log10((abs(currentSensor.i) + i_x_FC_stack)/i_0_FC_stack) + b_2_FC_stack*log10(1 - (abs(currentSensor.i) + i_x_FC_stack)/i_L_FC_stack));
 // Calculate the voltage of the cell
   V_cell = pin_p.v/N_FC_stack;
 // THERMAL EQUATIONS //
