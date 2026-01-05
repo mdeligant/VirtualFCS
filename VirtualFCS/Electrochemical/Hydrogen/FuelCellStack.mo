@@ -9,6 +9,11 @@ model FuelCellStack
   replaceable package Cathode_Medium = Media.MoistAirThreeComponents;
   replaceable package Anode_Medium = Media.MoistHydrogenThreeComponents;
   replaceable package Coolant_Medium = Modelica.Media.Water.ConstantPropertyLiquidWater constrainedby Modelica.Media.Interfaces.PartialMedium;
+  // Component indice
+  parameter Integer i_O2 = 1;
+  parameter Integer i_H2 = 1;
+  parameter Integer i_H2O = 2;
+  parameter Integer i_N2 = 3;
   //*** DECLARE PARAMETERS ***//
   // Physical parameters
   // Fuel Cell Stack Paramters
@@ -36,10 +41,14 @@ model FuelCellStack
   // Fuel cell variables
   Modelica.Units.SI.Voltage V_cell;
   Modelica.Units.SI.Power P_th;
-  Modelica.Units.SI.Pressure p_H2(min = 0);
-  Modelica.Units.SI.Pressure p_O2(min = 0);
-  Modelica.Units.SI.Pressure p_H2O(min = 0);
-  Modelica.Units.SI.Pressure p_0 = 100000;
+  Modelica.Units.SI.Pressure p_O2_log(min = 0);
+  Modelica.Units.SI.Pressure p_0 = 100000;  
+  Modelica.Units.SI.Pressure P_GDL_an_in[3];
+  Modelica.Units.SI.Pressure P_GDL_an_out[3];
+  Modelica.Units.SI.Pressure P_GDL_an_ave[3];
+  Modelica.Units.SI.Pressure P_GDL_ca_in[3];
+  Modelica.Units.SI.Pressure P_GDL_ca_out[3];
+  Modelica.Units.SI.Pressure P_GDL_ca_ave[3];
   // mass flow
   Modelica.Units.SI.MassFlowRate H2_mass_flow;
   Modelica.Units.SI.MassFlowRate O2_mass_flow;
@@ -123,29 +132,33 @@ model FuelCellStack
   Modelica.Blocks.Math.Gain nitogen_cross_over(k = -1) annotation(
     Placement(transformation(origin = {1, -9}, extent = {{-10, -10}, {10, 10}})));
 equation
-  i_lim_react = min(port_a_H2.m_flow*inStream(port_a_H2.Xi_outflow[1])/(0.002/(96485*2)*N_FC_stack), port_a_Air.m_flow*inStream(port_a_Air.Xi_outflow[2])/(0.016/(96485*2)*N_FC_stack));
+  i_lim_react = min(port_a_H2.m_flow*inStream(port_a_H2.Xi_outflow[i_H2])/(Anode_Medium.MMX[i_H2]/(F*2)*N_FC_stack), port_a_Air.m_flow*inStream(port_a_Air.Xi_outflow[i_O2])/(Cathode_Medium.MMX[i_O2]/(F*4)*N_FC_stack));
   phi_Cathode = Cathode_Medium.relativeHumidity(Cathode_Medium.setState_phX(channelCathode.port_b.p, channelCathode.port_b.h_outflow, channelCathode.port_b.Xi_outflow));
   phi_Anode = Anode_Medium.relativeHumidity(Anode_Medium.setState_phX(channelAnode.port_b.p, channelAnode.port_b.h_outflow, channelAnode.port_b.Xi_outflow));
-  OER_Cathode = -port_a_Air.m_flow*inStream(port_a_Air.Xi_outflow[2])/O2_mass_flow;
-  OER_Anode = -port_a_H2.m_flow*inStream(port_a_H2.Xi_outflow[1])/H2_mass_flow;
+  OER_Cathode = port_a_Air.m_flow*inStream(port_a_Air.Xi_outflow[i_O2])/O2_mass_flow;
+  OER_Anode = port_a_H2.m_flow*inStream(port_a_H2.Xi_outflow[i_H2])/H2_mass_flow;
 //transfer in the membrane
-  H2_mass_flow = Anode_Medium.MMX[1]/(F*2)*N_FC_stack*min(i_lim_react, currentSensor.i);
-  O2_mass_flow = Cathode_Medium.MMX[1]/(F*4)*N_FC_stack*min(i_lim_react, currentSensor.i);
+  H2_mass_flow = Anode_Medium.MMX[i_H2]/(F*2)*N_FC_stack*min(i_lim_react, currentSensor.i);
+  O2_mass_flow = Cathode_Medium.MMX[i_O2]/(F*4)*N_FC_stack*min(i_lim_react, currentSensor.i);
   GDL_an.mass_flow_a = {-H2_mass_flow, 0, 0};
-  GDL_ca.mass_flow_a[1] = -O2_mass_flow;
+  GDL_ca.mass_flow_a[i_O2] = -O2_mass_flow;
   GDL_an.mass_flow_b = {0, 0, 0};
   GDL_ca.mass_flow_b = {0, 0, 0};
   mass_balance = sum(GDL_an.mass_flow_a + GDL_ca.mass_flow_a);
   Power_stack = V_cell*N_FC_stack*pin_n.i;
 //*** DEFINE EQUATIONS ***//
-//average activities of H2 and H2O based on average partial pressure in channel
-  p_H2 = (channelAnode.port_a.p*inStream(channelAnode.port_a.Xi_outflow[1]) + channelAnode.port_b.p*actualStream(channelAnode.port_b.Xi_outflow[1]))/2;
-  p_H2O = (channelCathode.port_a.p*inStream(channelCathode.port_a.Xi_outflow[3]) + channelCathode.port_b.p*actualStream(channelCathode.port_b.Xi_outflow[3]))/2;
+// activities
+  P_GDL_an_in = Anode_Medium.partialPressure(actualStream(GDL_an.port_1.Xi_outflow), port_a_H2.p);
+  P_GDL_an_out = Anode_Medium.partialPressure(actualStream(GDL_an.port_2.Xi_outflow), port_b_H2.p);
+  P_GDL_an_ave = (P_GDL_an_in + P_GDL_an_ave)/2;
+  P_GDL_ca_in = Cathode_Medium.partialPressure(actualStream(GDL_ca.port_1.Xi_outflow), port_a_Air.p);
+  P_GDL_ca_out = Cathode_Medium.partialPressure(actualStream(GDL_ca.port_2.Xi_outflow), port_b_Air.p);
+  P_GDL_ca_ave =  (P_GDL_ca_in + P_GDL_ca_out)/2;
 //average activities of H2 and H2O based on logarithmic average of O2 partial pressure
-  p_O2 = (channelCathode.port_a.p*inStream(channelCathode.port_a.Xi_outflow[2]) - channelCathode.port_b.p*actualStream(channelCathode.port_b.Xi_outflow[2]))/(log(channelCathode.port_a.p*inStream(channelCathode.port_a.Xi_outflow[2])) - log(channelCathode.port_b.p*actualStream(channelCathode.port_b.Xi_outflow[2])));
+  p_O2_log = (P_GDL_ca_in[i_O2] - P_GDL_ca_out[i_O2])/(log(P_GDL_ca_in[i_O2]) - log(P_GDL_ca_out[i_O2]));
 // ELECTROCHEMICAL EQUATIONS //
 // Calculate the stack voltage
-  potentialSource.v = N_FC_stack*(1.229 + R*temperatureSensor.T/(2*F)*log((p_H2/p_0*(p_O2/p_0)^0.5)/(p_H2O/p_0)) - b_1_FC_stack*log10((abs(currentSensor.i) + i_x_FC_stack)/i_0_FC_stack) + b_2_FC_stack*log10(1 - (abs(currentSensor.i) + i_x_FC_stack)/min(i_lim_react, i_L_FC_stack)));
+  potentialSource.v = N_FC_stack*(1.229 + R*temperatureSensor.T/(2*F)*log((P_GDL_an_ave[i_H2]/p_0*(p_O2_log/p_0)^0.5)/(P_GDL_ca_ave[i_H2O]/p_0)) - b_1_FC_stack*log10((abs(currentSensor.i) + i_x_FC_stack)/i_0_FC_stack) + b_2_FC_stack*log10(1 - (abs(currentSensor.i) + i_x_FC_stack)/min(i_lim_react, i_L_FC_stack)));
 // Calculate the voltage of the cell
   V_cell = pin_p.v/N_FC_stack;
 // THERMAL EQUATIONS //
@@ -205,15 +218,15 @@ equation
     Line(points = {{150, 80}, {120, 80}, {120, 24}}));
   connect(GDL_ca.port_2, channelCathode.port_a) annotation(
     Line(points = {{120, 4}, {120, -64}}, color = {0, 127, 255}));
-  connect(GDL_an.mass_flow_a[1], water_prod.u2) annotation(
+  connect(GDL_an.mass_flow_a[i_H2], water_prod.u2) annotation(
     Line(points = {{-116, 14}, {-72, 14}, {-72, 78}, {-6, 78}, {-6, 62}}, color = {0, 0, 127}));
-  connect(GDL_ca.mass_flow_a[1], water_prod.u1) annotation(
+  connect(GDL_ca.mass_flow_a[i_O2], water_prod.u1) annotation(
     Line(points = {{116, 14}, {80, 14}, {80, 76}, {6, 76}, {6, 62}}, color = {0, 0, 127}));
-  connect(gain.y, GDL_ca.mass_flow_a[2]) annotation(
+  connect(gain.y, GDL_ca.mass_flow_a[i_H2O]) annotation(
     Line(points = {{54, 14}, {116, 14}}, color = {0, 0, 127}));
-  connect(GDL_an.mass_flow_a[3], nitogen_cross_over.u) annotation(
+  connect(GDL_an.mass_flow_a[i_N2], nitogen_cross_over.u) annotation(
     Line(points = {{-116, 14}, {-72, 14}, {-72, -8}, {-10, -8}}, color = {0, 0, 127}));
-  connect(nitogen_cross_over.y, GDL_ca.mass_flow_a[3]) annotation(
+  connect(nitogen_cross_over.y, GDL_ca.mass_flow_a[i_N2]) annotation(
     Line(points = {{12, -8}, {80, -8}, {80, 14}, {116, 14}}, color = {0, 0, 127}));
   connect(potentialSource.p, currentSensor.p) annotation(
     Line(points = {{-60, 110}, {-60, 100}, {-10, 100}}, color = {0, 0, 255}));
