@@ -4,6 +4,8 @@ model FuelCellStack
   // sources
   // for water transport in the membrane
   //[1] K. Jiao et X. Li, « Water transport in polymer electrolyte membrane fuel cells », Progress in Energy and Combustion Science, vol. 37, nᵒ 28, p. 221‑291, juin 2011, doi: 10.1016/j.pecs.2010.06.002.
+  // for calcul of potential
+  //[2] B. Xie, G. Zhang, J. Xuan, et K. Jiao, « Three-dimensional multi-phase model of PEM fuel cell coupled with improved agglomerate sub-model of catalyst layer », Energy Conversion and Management, vol. 199, p. 112051, nov. 2019, doi: 10.1016/j.enconman.2019.112051.
   //*** DEFINE REPLACEABLE PACKAGES ***//
   // System
   outer Modelica.Fluid.System system "System properties";
@@ -25,16 +27,8 @@ model FuelCellStack
   parameter Real W_FC_stack(unit = "m") = 0.582 "FC stack width";
   parameter Real H_FC_stack(unit = "m") = 0.156 "FC stack height";
   parameter Real vol_FC_stack(unit = "m3") = L_FC_stack*W_FC_stack*H_FC_stack "FC stack volume";
-  parameter Real I_rated_FC_stack(unit = "A") = 450 "FC stack rated current";
-  parameter Real i_L_FC_stack(unit = "A") = 760 "FC stack cell maximum limiting current";
   parameter Real N_FC_stack(unit = "1") = 455 "FC stack number of cells";
   parameter Real A_FC_surf(unit = "m2") = 2*(L_FC_stack*W_FC_stack) + 2*(L_FC_stack*H_FC_stack) + 2*(W_FC_stack*H_FC_stack) "FC stack surface area";
-  // Electrochemical parameters
-  parameter Real i_0_FC_stack(unit = "A") = 0.0091 "FC stack cell exchange current";
-  parameter Real i_x_FC_stack(unit = "A") = 0.001 "FC stack cell cross-over current";
-  parameter Real b_1_FC_stack(unit = "V/dec") = 0.0985 "FC stack cell Tafel slope";
-  parameter Real b_2_FC_stack(unit = "V/dec") = 0.0985 "FC stack cell trasport limitation factor";
-  parameter Real R_O_FC_stack(unit = "Ohm") = 0.00022*N_FC_stack "FC stack cell ohmic resistance";
   // Thermal parameters
   parameter Real Cp_FC_stack(unit = "J/(kg.K)") = 110.0 "FC stack specific heat capacity";
   // cell parameter
@@ -42,10 +36,25 @@ model FuelCellStack
   //density of the memebrane
   parameter Modelica.Units.SI.MolarMass EW = 1.100;
   // molar mass of the membrane
+  parameter Modelica.Units.SI.Length t_CL_an = 3*10^(-6); //thickness of catalist layer in anode [2]
+  parameter Modelica.Units.SI.Length t_CL_ca = 10*10^(-6);//thickness of catalist layer in cathode [2]
   parameter Modelica.Units.SI.Length t_mem = 25*10^(-6);
   //thickness of the membrane
   parameter Modelica.Units.SI.Area Cell_Area = 0.0237;
   // active area of a single cell
+  // activation overvoltage parameter [2]
+  parameter Modelica.Units.SI.CurrentDensity i_0_ref_an = 3.5; //Reference exchange current density
+  parameter Modelica.Units.SI.CurrentDensity i_0_ref_ca = 3.5*10^(-4); //Reference exchange current density
+  parameter Real alpha_an(unit = "1") = 0.5; //Transfer coefficient
+  parameter Real alpha_ca(unit = "1") = 0.5; //Transfer coefficient
+  parameter Real m_pt_an(unit = "kg/m2") = 0.05/10^6*10000;//Pt loading [2]
+  parameter Real m_pt_ca(unit = "kg/m2") = 0.05/10^6*10000;//Pt loading [2]
+  parameter Real ECSA(unit = "m2/kg") = 70*1000;//electrochemically active surface area [2]
+  parameter Real r_pt_c(unit = "1") = m_pt_ca/(0.05/10^6*10000)*0.1; //platinum weight percentage of Pt/carbon catalyst
+  parameter Real r_im_c(unit = "1") = 0.95; //mass ratio of ionomer to carbon
+  parameter Modelica.Units.SI.MolalConcentration C_H2_ref = 56.4; // reference concentration of H2 in the ionomer
+  parameter Modelica.Units.SI.MolalConcentration C_O2_ref = 3.39; // reference concentration of O2 in the ionomer
+  parameter Modelica.Units.SI.MolarEnergy w = 10000; // energy parameter link to theta_Pt_o_cov 
   //*** DECLARE VARIABLES ***//
   // Physical constants
   import Modelica.Constants.R;
@@ -53,6 +62,12 @@ model FuelCellStack
   // Fuel cell variables
   Modelica.Units.SI.Voltage V_cell;
   Modelica.Units.SI.CurrentDensity j_cell;
+  Modelica.Units.SI.Voltage V_rev;
+  Modelica.Units.SI.Voltage V_nernst;
+  Modelica.Units.SI.Voltage V_act_an;
+  Modelica.Units.SI.Voltage V_act_ca;
+  Modelica.Units.SI.Voltage V_act;
+  Modelica.Units.SI.Voltage V_ohm;
   Modelica.Units.SI.Power P_th;
   // partial pressure
   Modelica.Units.SI.Pressure p_O2_log(min = 0);
@@ -79,9 +94,20 @@ model FuelCellStack
   Modelica.Units.SI.MassFlowRate water_mass_flow_billan_theo;
   // the water mass flow is limited to avoid convergence issue during initialisation. after initialisation water_mass_flow_billan and  water_mass_flow_billan_theo should be always equal
   //humidity in the cell
-  Real lambda_an;
-  Real lambda_ca;
-  Real lambda_m;
+  Real lambda_an(unit = "1");// water content of the membrane anode side
+  Real lambda_ca(unit = "1");// water content of the membrane cathode side
+  Real lambda_m(unit = "1");// water content of the membrane average
+  // ohmic overvoltage variable [2]
+  Modelica.Units.SI.Conductivity Conductivity; // dependant of water content of the membrane
+  // activation overvoltage variable [2]
+  Real A_eff_pt_an(unit ="/m"); //specific surface area of pt anode side
+  Real A_eff_pt_ca(unit ="/m"); //specific surface area of pt cathode side
+  Real theta_T_an(unit = "1"); // temperature correction coefficient anode side
+  Real theta_T_ca(unit = "1"); // temperature correction coefficient cathode side
+  Real theta_Pt_o_cov(unit = "1"); // Pt-oxide coverage-dependent correction coefficient
+  Real theta_Pt_im_cov(unit = "1"); // Pt-ionomer coverage-dependent correction coefficient
+  Real H_H2(unit = "Pa.m3/mol"); //henry constant to have the concentration in the ionomer next to platinium
+  Real H_O2(unit = "Pa.m3/mol"); //henry constant to have the concentration in the ionomer next to platinium
   //*** INSTANTIATE COMPONENTS ***//
   // Efficiencies
   Real eta_FC_LHV(unit = "100") "Lower heating value efficiency of fuel cell stack";
@@ -103,8 +129,6 @@ model FuelCellStack
     Placement(visible = true, transformation(origin = {60, 150}, extent = {{-10, -10}, {10, 10}}, rotation = 0), iconTransformation(origin = {60, 150}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
   Modelica.Electrical.Analog.Interfaces.NegativePin pin_n annotation(
     Placement(visible = true, transformation(origin = {-60, 150}, extent = {{-10, -10}, {10, 10}}, rotation = 0), iconTransformation(origin = {-60, 150}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
-  Modelica.Electrical.Analog.Basic.Resistor R_ohmic(R = R_O_FC_stack) annotation(
-    Placement(visible = true, transformation(origin = {60, 120}, extent = {{-10, -10}, {10, 10}}, rotation = 90)));
   Modelica.Electrical.Analog.Sources.SignalVoltage potentialSource annotation(
     Placement(visible = true, transformation(origin = {-60, 120}, extent = {{-10, -10}, {10, 10}}, rotation = 90)));
   Modelica.Electrical.Analog.Sensors.CurrentSensor currentSensor annotation(
@@ -153,9 +177,9 @@ model FuelCellStack
   Modelica.Fluid.Sensors.Temperature inlet_hydrogen_temperature(redeclare package Medium = Cathode_Medium) annotation(
     Placement(transformation(origin = {-120, 98}, extent = {{-10, -10}, {10, 10}})));
   Modelica.Units.SI.Current i_lim_react "Limiting current from reactive flows";
-  Fluid.Membrane GDL_an(redeclare package Medium = Anode_Medium, V = 0.027, T_start = 353.15, X_start = {0.5, 0.4, 0.1}) annotation(
+  Fluid.Membrane GDL_an(redeclare package Medium = Anode_Medium, V = 0.027, T_start = 353.15, X_start = {0.5, 0.4, 0.1}, p_start = 3e5) annotation(
     Placement(transformation(origin = {-120, 14}, extent = {{-10, -10}, {10, 10}}, rotation = -90)));
-  Fluid.Membrane GDL_ca(redeclare package Medium = Cathode_Medium, V = 0.027, T_start = 353.15) annotation(
+  Fluid.Membrane GDL_ca(redeclare package Medium = Cathode_Medium, V = 0.027, T_start = 353.15, p_start = 3e5) annotation(
     Placement(transformation(origin = {120, 14}, extent = {{10, -10}, {-10, 10}}, rotation = 90)));
   Modelica.Blocks.Math.Gain nitogen_cross_over(k = -1) annotation(
     Placement(transformation(origin = {1, -9}, extent = {{-10, -10}, {10, 10}})));
@@ -165,8 +189,8 @@ equation
   i_lim_react = min(port_a_H2.m_flow*inStream(port_a_H2.Xi_outflow[i_H2])/(Anode_Medium.MMX[i_H2]/(F*2)*N_FC_stack), port_a_Air.m_flow*inStream(port_a_Air.Xi_outflow[i_O2])/(Cathode_Medium.MMX[i_O2]/(F*4)*N_FC_stack));
   j_cell*Cell_Area = currentSensor.i;
 // humidity
-  phi_Cathode = Cathode_Medium.relativeHumidity(Cathode_Medium.setState_phX(channelCathode.port_b.p, channelCathode.port_b.h_outflow, GDL_ca.medium.X));
-  phi_Anode = Anode_Medium.relativeHumidity(Anode_Medium.setState_phX(channelAnode.port_b.p, channelAnode.port_b.h_outflow, GDL_an.medium.X));
+  phi_Cathode = Cathode_Medium.relativeHumidity(Cathode_Medium.setState_pTX(channelCathode.port_b.p, temperatureSensor.T, GDL_ca.medium.X));
+  phi_Anode = Anode_Medium.relativeHumidity(Anode_Medium.setState_pTX(channelAnode.port_b.p, temperatureSensor.T, GDL_an.medium.X));
   lambda_an = if phi_Anode < 1 then 0.043 + 17.81*phi_Anode - 39.85*phi_Anode^2 + 36*phi_Anode^3 else 14 + 1.4*(phi_Anode - 1)*2*1.27/1000;
 // could be modified to have an expression dependant of temperature
   lambda_ca = if phi_Cathode < 1 then 0.043 + 17.81*phi_Cathode - 39.85*phi_Cathode^2 + 36*phi_Cathode^3 else 14 + 1.4*(phi_Cathode - 1)*2*1.27/1000;
@@ -203,13 +227,32 @@ equation
   p_O2_log = (P_GDL_ca_in[i_O2] - P_GDL_ca_out[i_O2])/(log(P_GDL_ca_in[i_O2]) - log(P_GDL_ca_out[i_O2]));
 // ELECTROCHEMICAL EQUATIONS //
 // Calculate the stack voltage
-  potentialSource.v = N_FC_stack*(1.229 + R*temperatureSensor.T/(2*F)*log((P_GDL_an_ave[i_H2]/p_0*(p_O2_log/p_0)^0.5)/(P_GDL_ca_ave[i_H2O]/p_0)) - b_1_FC_stack*log10((abs(currentSensor.i) + i_x_FC_stack)/i_0_FC_stack) + b_2_FC_stack*log10(1 - (abs(currentSensor.i) + i_x_FC_stack)/min(i_lim_react, i_L_FC_stack)));
-// Calculate the voltage of the cell
-  V_cell = pin_p.v/N_FC_stack;
+  // activation over voltage
+  A_eff_pt_an = m_pt_an*ECSA/t_CL_an;
+  A_eff_pt_ca = m_pt_ca*ECSA/t_CL_ca;
+  theta_T_an = exp(-1400*(1/temperatureSensor.T - 1/353.15));
+  theta_T_ca = exp(-7900*(1/temperatureSensor.T - 1/353.15));
+  theta_Pt_im_cov = 1 - exp(-30.6*(r_pt_c/(r_im_c*(1 - r_pt_c)))^2.6);
+  theta_Pt_o_cov = 1/(1 + exp(22.4*(0.818 - (V_nernst - V_act_ca - R*temperatureSensor.T/(2*F)*log((P_GDL_an_ave[i_H2]/p_0))))));
+  H_H2 = 2583.7875*exp(170/temperatureSensor.T);
+  H_O2 = 101325/(4.408 - 0.09712*lambda_m);
+  
+  j_cell/t_CL_an = i_0_ref_an*A_eff_pt_an*theta_T_an*(P_GDL_an_ave[i_H2]/(H_H2*C_H2_ref))^0.5*(exp((2*F*alpha_an*V_act_an)/(R*temperatureSensor.T)) - exp(-(2*F*alpha_an*V_act_an)/(R*temperatureSensor.T)));
+  
+  j_cell/t_CL_ca = p_O2_log/H_O2/(C_O2_ref/(i_0_ref_ca*A_eff_pt_ca*theta_T_ca*theta_Pt_im_cov*(1 - theta_Pt_o_cov)*(exp((4*F*alpha_ca*V_act_ca)/(R*temperatureSensor.T)) - exp(-(4*F*alpha_ca*V_act_ca + w*theta_Pt_o_cov)/(R*temperatureSensor.T)))));
+  
+  // stack voltage
+  V_rev = 1.229 - 0.85*10^(-3)*(temperatureSensor.T - 298.15);
+  V_nernst = V_rev + R*temperatureSensor.T/(2*F)*log((P_GDL_an_ave[i_H2]/p_0*(p_O2_log/p_0)^0.5)/(P_GDL_ca_ave[i_H2O]/p_0));
+  V_act = V_act_an + V_act_ca;
+  Conductivity = (0.5139*lambda_m - 0.326)*exp(1268*(1/303 - 1/temperatureSensor.T));
+  V_ohm = t_mem/Conductivity*j_cell;
+  V_cell = V_nernst - V_act - V_ohm;
+  potentialSource.v = N_FC_stack*V_cell;
 // THERMAL EQUATIONS //
   P_th = (1.481 - V_cell)*abs(currentSensor.i)*N_FC_stack;
-  GDL_an.Q_flow = if time < 0.1 then 100000 else 0;
-  GDL_ca.Q_flow = if time < 0.1 then 100000 else 0;
+  GDL_an.Q_flow = 0;
+  GDL_ca.Q_flow = 0;
 // Assign the thermal power value to the heat flow component
   prescribedHeatFlow.Q_flow = P_th;
 // Efficiencies
@@ -219,8 +262,6 @@ equation
     Line(points = {{10, -126}, {140, -126}}, color = {255, 0, 0}, thickness = 1));
   connect(pipeCoolant.port_a, port_a_Coolant) annotation(
     Line(points = {{-10, -126}, {-140, -126}}, color = {0, 0, 255}, thickness = 1));
-  connect(R_ohmic.n, pin_p) annotation(
-    Line(points = {{60, 130}, {60, 150}}, color = {0, 0, 255}));
   connect(pin_n, potentialSource.n) annotation(
     Line(points = {{-60, 150}, {-60, 150}, {-60, 130}, {-60, 130}}, color = {0, 0, 255}));
   connect(pin_n, ground.p) annotation(
@@ -271,14 +312,14 @@ equation
     Line(points = {{12, -8}, {80, -8}, {80, 14}, {116, 14}}, color = {0, 0, 127}));
   connect(potentialSource.p, currentSensor.p) annotation(
     Line(points = {{-60, 110}, {-60, 100}, {-10, 100}}, color = {0, 0, 255}));
-  connect(currentSensor.n, R_ohmic.p) annotation(
-    Line(points = {{10, 100}, {60, 100}, {60, 110}}, color = {0, 0, 255}));
   connect(GDL_an.mass_flow_a[i_H2O], water_prod_and_transfer.u2) annotation(
     Line(points = {{-116, 14}, {0, 14}, {0, 8}, {38, 8}}, color = {0, 0, 127}));
   connect(water_prod.y, water_prod_and_transfer.u1) annotation(
     Line(points = {{0, 40}, {0, 20}, {38, 20}}, color = {0, 0, 127}));
   connect(water_prod_and_transfer.y, GDL_ca.mass_flow_a[i_H2O]) annotation(
     Line(points = {{62, 14}, {116, 14}}, color = {0, 0, 127}));
+  connect(currentSensor.n, pin_p) annotation(
+    Line(points = {{10, 100}, {60, 100}, {60, 150}}, color = {0, 0, 255}));
   annotation(
     Diagram(coordinateSystem(extent = {{-150, -150}, {150, 150}}, initialScale = 0.1)),
     Icon(coordinateSystem(extent = {{-150, -150}, {150, 150}}, initialScale = 0.1), graphics = {Line(origin = {20.1754, 1.92106}, points = {{0, 78}, {0, -80}, {0, -82}}), Rectangle(origin = {80, 0}, fillColor = {0, 178, 227}, pattern = LinePattern.None, fillPattern = FillPattern.Solid, extent = {{-20, 100}, {20, -100}}), Line(origin = {40.1315, 2}, points = {{0, 78}, {0, -80}, {0, -82}}), Line(origin = {0.219199, 1.92106}, points = {{0, 78}, {0, -80}, {0, -82}}), Line(origin = {-40.0001, 1.61404}, points = {{0, 78}, {0, -80}, {0, -82}}), Rectangle(origin = {-80, 0}, fillColor = {170, 0, 0}, pattern = LinePattern.None, fillPattern = FillPattern.Solid, extent = {{-20, 100}, {20, -100}}), Text(origin = {10, -54}, textColor = {255, 0, 0}, extent = {{-11, 6}, {11, -6}}, textString = "K"), Line(origin = {-20.0439, -0.307018}, points = {{0, 80}, {0, -80}, {0, -80}}), Rectangle(origin = {35, 54}, fillColor = {177, 177, 177}, fillPattern = FillPattern.Vertical, extent = {{-95, 26}, {25, -134}}), Text(origin = {-80, 6}, extent = {{-26, 24}, {26, -24}}, textString = "A"), Text(origin = {80, 6}, extent = {{-26, 24}, {26, -24}}, textString = "C"), Text(origin = {74, -94}, extent = {{-22, 10}, {22, -10}}, textString = "OER"), Text(origin = {75, -113}, extent = {{-21, 11}, {21, -11}}, textString = "phi"), Text(origin = {-86, -94}, extent = {{-22, 10}, {22, -10}}, textString = "OER"), Text(origin = {-85, -113}, extent = {{-21, 11}, {21, -11}}, textString = "phi")}),
