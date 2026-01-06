@@ -7,7 +7,7 @@ model TestStack_with_current_source2
   //    replaceable package Cathode_Medium = Modelica.Media.Air.MoistAir;
   replaceable package Anode_Medium = Media.MoistHydrogenThreeComponents;
   replaceable package Coolant_Medium = Modelica.Media.Water.ConstantPropertyLiquidWater constrainedby Modelica.Media.Interfaces.PartialMedium;
-  Electrochemical.Hydrogen.FuelCellStack fuelCellStack(redeclare package Cathode_Medium = Cathode_Medium) annotation(
+  Electrochemical.Hydrogen.FuelCellStack fuelCellStack(redeclare package Cathode_Medium = Cathode_Medium, m_pt_an = 0.025/100, m_pt_ca = 0.025/100) annotation(
     Placement(transformation(origin = {1, 5}, extent = {{-34, -34}, {34, 34}})));
   Modelica.Fluid.Sources.Boundary_pT SinkPressureH2(nPorts = 1, p = 2e5, T = 293.15, redeclare package Medium = Anode_Medium) annotation(
     Placement(transformation(origin = {-70, -14}, extent = {{-10, -10}, {10, 10}})));
