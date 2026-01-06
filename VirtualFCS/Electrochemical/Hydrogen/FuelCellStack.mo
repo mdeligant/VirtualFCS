@@ -8,6 +8,8 @@ model FuelCellStack
   //[2] B. Xie, G. Zhang, J. Xuan, et K. Jiao, « Three-dimensional multi-phase model of PEM fuel cell coupled with improved agglomerate sub-model of catalyst layer », Energy Conversion and Management, vol. 199, p. 112051, nov. 2019, doi: 10.1016/j.enconman.2019.112051.
   // for diffusion in GDL
   // [3] B. Xie et al., « Validation methodology for PEM fuel cell three-dimensional simulation », International Journal of Heat and Mass Transfer, vol. 189, nᵒ 25, p. 122705, juin 2022, doi: 10.1016/j.ijheatmasstransfer.2022.122705.
+  // for diffusion of H2 and N2 trought membrane
+  //[4] R. Omrani et B. Shabani, « An analytical model for hydrogen and nitrogen crossover rates in proton exchange membrane fuel cells », International Journal of Hydrogen Energy, vol. 45, nᵒ 55, p. 31041‑31055, nov. 2020, doi: 10.1016/j.ijhydene.2020.08.089.
 
   //*** DEFINE REPLACEABLE PACKAGES ***//
   // System
@@ -106,6 +108,17 @@ model FuelCellStack
   Modelica.Units.SI.MassFlowRate water_mass_flow_billan;
   Modelica.Units.SI.MassFlowRate water_mass_flow_billan_theo;
   // the water mass flow is limited to avoid convergence issue during initialisation. after initialisation water_mass_flow_billan and  water_mass_flow_billan_theo should be always equal
+  // diffusion of N2 and H2 trought membrane [4]
+  Modelica.Units.SI.MassFlowRate H2_mem_crossover;
+  Modelica.Units.SI.MassFlowRate N2_mem_crossover;
+  Modelica.Units.SI.MassFlowRate O2_mem_crossover_reac;
+  Real mem_N2_diff(unit ="mol/m/s/Pa");
+  Real mem_N2_diff_0(unit ="mol/m/s/Pa");
+  Modelica.Units.SI.MolarEnergy mem_N2_diff_Ea;
+  Real mem_H2_diff(unit ="mol/m/s/Pa");
+  Real mem_H2_diff_0(unit ="mol/m/s/Pa");
+  Modelica.Units.SI.MolarEnergy mem_H2_diff_Ea;
+  Modelica.Units.SI.CurrentDensity j_H2_crossover;
   //humidity in the cell
   Real lambda_an(unit = "1");// water content of the membrane anode side
   Real lambda_ca(unit = "1");// water content of the membrane cathode side
@@ -224,8 +237,12 @@ equation
   OER_Anode = port_a_H2.m_flow*inStream(port_a_H2.Xi_outflow[i_H2])/H2_mass_flow;
 //transfer in the membrane
   H2_mass_flow = Anode_Medium.MMX[i_H2]/(F*2)*N_FC_stack*min(i_lim_react, currentSensor.i);
-  O2_mass_flow = Cathode_Medium.MMX[i_O2]/(F*4)*N_FC_stack*min(i_lim_react, currentSensor.i);
-  CL_an.mass_flow_a = {-H2_mass_flow, water_mass_flow_billan, 0}; 
+  O2_mass_flow = Cathode_Medium.MMX[i_O2]/(F*4)*N_FC_stack*min(i_lim_react, currentSensor.i); 
+  H2_mem_crossover = mem_H2_diff/t_mem*P_CL_an_ave[i_H2]*Cell_Area*N_FC_stack*Anode_Medium.MMX[i_H2];
+  N2_mem_crossover = mem_N2_diff/t_mem*(P_CL_an_ave[i_N2] -P_CL_an_ave[i_N2])*Cell_Area*N_FC_stack*Anode_Medium.MMX[i_N2];
+  O2_mem_crossover_reac = mem_H2_diff/t_mem*P_CL_an_ave[i_H2]*Cell_Area*N_FC_stack*Anode_Medium.MMX[i_O2]/2;
+  j_H2_crossover = H2_mem_crossover*F*2/(Anode_Medium.MMX[i_H2]*N_FC_stack*Cell_Area);
+  CL_an.mass_flow_a = {-H2_mass_flow - H2_mem_crossover , water_mass_flow_billan , N2_mem_crossover}; 
   CL_ca.mass_flow_a[i_O2] = -O2_mass_flow;
   GDL_an.mass_flow_b = {0, 0, 0};
   GDL_ca.mass_flow_b = {0, 0, 0};
@@ -241,6 +258,14 @@ equation
   diff_mass_flow = Anode_Medium.MMX[i_H2O]*rhoMem/EW*Dnmw*(lambda_ca - lambda_an)/t_mem*Cell_Area*N_FC_stack;
   water_mass_flow_billan_theo = EOD_mass_flow + diff_mass_flow;
   water_mass_flow_billan = min(max(-inStream(CL_an.port_1.Xi_outflow[i_H2O])*CL_an.port_1.m_flow*0.99, water_mass_flow_billan_theo), inStream(CL_ca.port_1.Xi_outflow[i_H2O])*CL_ca.port_1.m_flow*0.99);
+// hydrogen and nitrogen crossover trought the membrane
+// H2 ans N2 diffusion trought membrane
+  mem_N2_diff_0 = 1.163*10^(-12)*exp(3.772*(phi_Anode + phi_Cathode)/2);
+  mem_N2_diff_Ea = 1000*11.39*exp(0.5511*(phi_Anode + phi_Cathode)/2);
+  mem_N2_diff = mem_N2_diff_0*exp(-mem_N2_diff_Ea/(R*temperatureSensor.T));
+  mem_H2_diff_0 = 9.27*10^(-11)*exp(2.14*(phi_Anode + phi_Cathode)/2)*100/100000;
+  mem_H2_diff_Ea = 1000*6.87*exp(0.467*(phi_Anode + phi_Cathode)/2);
+  mem_H2_diff = mem_H2_diff_0*exp(-mem_H2_diff_Ea/(R*temperatureSensor.T));
 // diffusion between gaz channel and CL [3]
   D_an = GDL_porosity^1.5*{1.005*10^(-4),1.005*10^(-4),1.005*10^(-4)}*(temperatureSensor.T/332.15)^1.5*(101325/CL_an.medium.p);
   D_ca = GDL_porosity^1.5*{2.652*10^(-5),2.982*10^(-5),2.982*10^(-5)}*(temperatureSensor.T/332.15)^1.5*(101325/CL_ca.medium.p);
@@ -275,7 +300,7 @@ equation
   
   j_cell/t_CL_an = i_0_ref_an*A_eff_pt_an*theta_T_an*(P_CL_an_ave[i_H2]/(H_H2*C_H2_ref))^0.5*(exp((2*F*alpha_an*V_act_an)/(R*temperatureSensor.T)) - exp(-(2*F*alpha_an*V_act_an)/(R*temperatureSensor.T)));
   
-  j_cell/t_CL_ca = p_O2_log/H_O2/(C_O2_ref/(i_0_ref_ca*A_eff_pt_ca*theta_T_ca*theta_Pt_im_cov*(1 - theta_Pt_o_cov)*(exp((4*F*alpha_ca*V_act_ca)/(R*temperatureSensor.T)) - exp(-(4*F*alpha_ca*V_act_ca + w*theta_Pt_o_cov)/(R*temperatureSensor.T)))));
+  (j_cell+j_H2_crossover)/t_CL_ca = p_O2_log/H_O2/(C_O2_ref/(i_0_ref_ca*A_eff_pt_ca*theta_T_ca*theta_Pt_im_cov*(1 - theta_Pt_o_cov)*(exp((4*F*alpha_ca*V_act_ca)/(R*temperatureSensor.T)) - exp(-(4*F*alpha_ca*V_act_ca + w*theta_Pt_o_cov)/(R*temperatureSensor.T)))));
   
   // stack voltage
   V_rev = 1.229 - 0.85*10^(-3)*(temperatureSensor.T - 298.15);

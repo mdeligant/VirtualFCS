@@ -7,7 +7,7 @@ model TestStack_with_current_source2
   //    replaceable package Cathode_Medium = Modelica.Media.Air.MoistAir;
   replaceable package Anode_Medium = Media.MoistHydrogenThreeComponents;
   replaceable package Coolant_Medium = Modelica.Media.Water.ConstantPropertyLiquidWater constrainedby Modelica.Media.Interfaces.PartialMedium;
-  Electrochemical.Hydrogen.FuelCellStack fuelCellStack(redeclare package Cathode_Medium = Cathode_Medium, m_pt_an = 0.025/100, m_pt_ca = 0.025/100) annotation(
+  Electrochemical.Hydrogen.FuelCellStack fuelCellStack(redeclare package Cathode_Medium = Cathode_Medium, m_pt_an = 0.1/100, m_pt_ca = 0.1/100) annotation(
     Placement(transformation(origin = {1, 5}, extent = {{-34, -34}, {34, 34}})));
   Modelica.Fluid.Sources.Boundary_pT SinkPressureH2(nPorts = 1, p = 2e5, T = 293.15, redeclare package Medium = Anode_Medium) annotation(
     Placement(transformation(origin = {-70, -14}, extent = {{-10, -10}, {10, 10}})));
@@ -23,7 +23,7 @@ model TestStack_with_current_source2
     Placement(transformation(origin = {-66, 24}, extent = {{-10, -10}, {10, 10}})));
   Modelica.Electrical.Analog.Basic.VariableResistor resistor annotation(
     Placement(transformation(origin = {4, 86}, extent = {{10, -10}, {-10, 10}})));
-  Modelica.Blocks.Sources.Ramp ramp(duration = 80, height = -9.3, offset = 10, startTime = 10) annotation(
+  Modelica.Blocks.Sources.Ramp ramp(duration = 80, height = -999.6, offset = 1000, startTime = 10) annotation(
     Placement(transformation(origin = {-74, 106}, extent = {{-10, -10}, {10, 10}})));
 equation
   connect(SourceAir.ports[1], fuelCellStack.port_a_Air) annotation(
