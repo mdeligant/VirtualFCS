@@ -17,25 +17,25 @@ model TestStack_with_resistor_with_air_compressor_control_both_OER
     Placement(transformation(origin = {58, -10}, extent = {{-10, 10}, {10, -10}})));
   Modelica.Fluid.Sources.Boundary_pT AirSink(redeclare package Medium = Cathode_Medium, nPorts = 1, p = 1e5) annotation(
     Placement(transformation(origin = {90, -10}, extent = {{10, -10}, {-10, 10}})));
-  Control.PID pid_OER_air(CSmax = 1, CSmin = 0.001, Kp = 1, PVmax = 100, PVmin = 0, Ti = 0.1, CSs(start = 1, fixed = true)) annotation(
+  Control.PID pid_OER_air(CSmax = 1, CSmin = 0.001, Kp = 1, PVmax = 100, PVmin = 0, Ti = 0.01, CSs(start = 1, fixed = true)) annotation(
     Placement(transformation(origin = {76, -48}, extent = {{10, -10}, {-10, 10}})));
-  Modelica.Blocks.Sources.Ramp air_OER_ramp(duration = 5, height = 1.5, offset = 2, startTime = 20) annotation(
+  Modelica.Blocks.Sources.Ramp air_OER_ramp(duration = 5, height = 1.5, offset = 3, startTime = 50) annotation(
     Placement(transformation(origin = {123, -44}, extent = {{10, -10}, {-10, 10}})));
   inner Modelica.Fluid.System system annotation(
     Placement(transformation(origin = {86, 90}, extent = {{-10, -10}, {10, 10}})));
   Modelica.Fluid.Sources.Boundary_pT SinkPressureH2(redeclare package Medium = Anode_Medium, T = 293.15, nPorts = 1, p = 1e5) annotation(
     Placement(transformation(origin = {-90, -12}, extent = {{-10, -10}, {10, 10}})));
   Modelica.Fluid.Sources.Boundary_pT SourcePressureH2(redeclare package Medium = Anode_Medium, T = 293.15, nPorts = 1, p = 2e5) annotation(
-    Placement(transformation(origin = {-84, 22}, extent = {{-10, -10}, {10, 10}})));
+    Placement(transformation(origin = {-86, 22}, extent = {{-10, -10}, {10, 10}})));
   Modelica.Fluid.Valves.ValveLinear valveLinearH2(redeclare package Medium = Anode_Medium, dp(start = 1e4), dp_nominal = 1e4, m_flow_nominal = 0.002) annotation(
     Placement(transformation(origin = {-52, -12}, extent = {{10, 10}, {-10, -10}})));
-  Control.PID pid_OER_H2(CSmax = 1, CSmin = 0.001, CSs(start = 0.01, fixed = true), Kp = 1, PVmax = 100, PVmin = 0, Ti = 0.1) annotation(
+  Control.PID pid_OER_H2(CSmax = 1, CSmin = 0.001, CSs(start = 0.01, fixed = true), Kp = 0.1, PVmax = 100, PVmin = 0, Ti = 0.01) annotation(
     Placement(transformation(origin = {-82, -42}, extent = {{-10, -10}, {10, 10}})));
-  Modelica.Blocks.Sources.Ramp H2_OER_ramp(duration = 1, height = 2, offset = 1, startTime = 0) annotation(
+  Modelica.Blocks.Sources.Ramp H2_OER_ramp(duration = 5, height = 2, offset = 2, startTime = 40) annotation(
     Placement(transformation(origin = {-139, -38}, extent = {{-10, -10}, {10, 10}})));
   Modelica.Electrical.Analog.Basic.VariableResistor resistor annotation(
     Placement(transformation(origin = {-2, 76}, extent = {{10, -10}, {-10, 10}})));
-  Modelica.Blocks.Sources.Ramp ramp(duration = 80, height = -9.3, offset = 10, startTime = 10) annotation(
+  Modelica.Blocks.Sources.Ramp ramp(duration = 80, height = -8, offset = 10, startTime = 10) annotation(
     Placement(transformation(origin = {-70, 88}, extent = {{-10, -10}, {10, 10}})));
   Modelica.Fluid.Sources.Boundary_pT AirSource(redeclare package Medium = Cathode_Medium, nPorts = 1) annotation(
     Placement(transformation(origin = {116, 20}, extent = {{10, -10}, {-10, 10}})));
@@ -49,7 +49,7 @@ model TestStack_with_resistor_with_air_compressor_control_both_OER
     Placement(transformation(origin = {232, 57}, extent = {{10, -10}, {-10, 10}})));
   Modelica.Fluid.Sensors.Pressure pressure(redeclare package Medium = Cathode_Medium) annotation(
     Placement(transformation(origin = {26, 44}, extent = {{-10, -10}, {10, 10}})));
-  VirtualFCS.Control.PID pid_pressure(CSmax = 150000*Modelica.Constants.pi/30, CSmin = 0, Kp = 1, PVmax = 5e5, PVmin = 0.1e5, Ti = 0.1) annotation(
+  VirtualFCS.Control.PID pid_pressure(CSmax = 150000*Modelica.Constants.pi/30, CSmin = 15000*Modelica.Constants.pi/30, Kp = 1, PVmax = 5e5, PVmin = 0.1e5, Ti = 1) annotation(
     Placement(transformation(origin = {180, 47}, extent = {{10, -10}, {-10, 10}})));
 equation
   connect(fuelCellStack.port_a_Coolant, SourceWater.ports[1]) annotation(
@@ -64,10 +64,8 @@ equation
     Line(points = {{26, -10}, {48, -10}}, color = {0, 127, 255}));
   connect(valveLinearAir.port_b, AirSink.ports[1]) annotation(
     Line(points = {{68, -10}, {80, -10}}, color = {0, 127, 255}));
-  connect(fuelCellStack.OER_Cathode, pid_OER_air.PV) annotation(
-    Line(points = {{26, -16}, {42, -16}, {42, -92}, {104, -92}, {104, -52}, {86, -52}}, color = {0, 0, 127}));
   connect(SourcePressureH2.ports[1], fuelCellStack.port_a_H2) annotation(
-    Line(points = {{-74, 22}, {-50, 22}, {-50, 20}, {-24, 20}}, color = {0, 127, 255}));
+    Line(points = {{-76, 22}, {-50, 22}, {-50, 20}, {-24, 20}}, color = {0, 127, 255}));
   connect(fuelCellStack.port_b_H2, valveLinearH2.port_a) annotation(
     Line(points = {{-24, -10}, {-42, -10}, {-42, -12}}, color = {0, 127, 255}));
   connect(valveLinearH2.port_b, SinkPressureH2.ports[1]) annotation(
@@ -102,6 +100,10 @@ equation
     Line(points = {{38, 44}, {40, 44}, {40, 70}, {262, 70}, {262, 43}, {190, 43}}, color = {0, 0, 127}));
   connect(electricalCentrifugalCompressor.controlInterface, pid_pressure.CS) annotation(
     Line(points = {{76, 30}, {96, 30}, {96, 48}, {170, 48}}, color = {0, 0, 127}));
+  connect(pid_OER_air.PV, fuelCellStack.OER_Cathode) annotation(
+    Line(points = {{86, -52}, {34, -52}, {34, 30}, {26, 30}}, color = {0, 0, 127}));
   annotation(
-    experiment(StartTime = 0, StopTime = 150, Tolerance = 1e-06, Interval = 0.02));
+    experiment(StartTime = 0, StopTime = 70, Tolerance = 1e-06, Interval = 0.1),
+  __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts",
+  __OpenModelica_simulationFlags(lv = "LOG_STDOUT,LOG_ASSERT,LOG_STATS", s = "dassl", variableFilter = ".*"));
 end TestStack_with_resistor_with_air_compressor_control_both_OER;

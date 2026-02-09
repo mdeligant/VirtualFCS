@@ -9,7 +9,7 @@ model TestStack_with_resistor
   replaceable package Coolant_Medium = Modelica.Media.Water.ConstantPropertyLiquidWater constrainedby Modelica.Media.Interfaces.PartialMedium;
   Electrochemical.Hydrogen.FuelCellStack fuelCellStack(redeclare package Cathode_Medium = Cathode_Medium) annotation(
     Placement(transformation(origin = {-3, 9}, extent = {{-34, -34}, {34, 34}})));
-  Modelica.Fluid.Sources.Boundary_pT SinkPressureH2(nPorts = 1, p = 2e5, T = 293.15, redeclare package Medium = Anode_Medium) annotation(
+  Modelica.Fluid.Sources.Boundary_pT SinkPressureH2(nPorts = 1, p = 1.1e5, T = 293.15, redeclare package Medium = Anode_Medium) annotation(
     Placement(transformation(origin = {-66, -6}, extent = {{-10, -10}, {10, 10}})));
   Modelica.Fluid.Sources.MassFlowSource_T SourceAir(nPorts = 1, m_flow = 0.25, T = 313.15, redeclare package Medium = Cathode_Medium, X = {0.78, 0.196, 0.024}) annotation(
     Placement(transformation(origin = {48, 24}, extent = {{10, -10}, {-10, 10}})));
@@ -45,5 +45,7 @@ equation
   connect(resistor.p, fuelCellStack.pin_p) annotation(
     Line(points = {{4, 62}, {10, 62}, {10, 44}}, color = {0, 0, 255}));
   annotation(
-    experiment(StartTime = 0, StopTime = 150, Tolerance = 1e-06, Interval = 0.02));
+    experiment(StartTime = 0, StopTime = 85, Tolerance = 1e-06, Interval = 0.02),
+  __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian -d=aliasConflicts ",
+  __OpenModelica_simulationFlags(lv = "LOG_STDOUT,LOG_ASSERT,LOG_STATS", s = "dassl", variableFilter = ".*"));
 end TestStack_with_resistor;

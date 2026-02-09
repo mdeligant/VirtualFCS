@@ -23,7 +23,7 @@ model TestStack_with_current_source2
     Placement(transformation(origin = {-66, 24}, extent = {{-10, -10}, {10, 10}})));
   Modelica.Blocks.Sources.Ramp ramp(duration = 800, height = -999, offset = 1000, startTime = 10) annotation(
     Placement(transformation(origin = {-74, 106}, extent = {{-10, -10}, {10, 10}})));
-  Modelica.Electrical.Analog.Sources.RampCurrent rampCurrent(I = 440, duration = 800, offset = 1, startTime = 10) annotation(
+  Modelica.Electrical.Analog.Sources.RampCurrent rampCurrent(I = 430, duration = 800, offset = 10, startTime = 10) annotation(
     Placement(transformation(origin = {0, 84}, extent = {{10, -10}, {-10, 10}})));
 equation
   connect(SourceAir.ports[1], fuelCellStack.port_a_Air) annotation(
@@ -44,6 +44,6 @@ equation
     Line(points = {{-10, 84}, {-12, 84}, {-12, 40}}, color = {0, 0, 255}));
   annotation(
     experiment(StartTime = 0, StopTime = 1000, Tolerance = 1e-06, Interval = 0.2),
-  __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts",
+  __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts",
   __OpenModelica_simulationFlags(lv = "LOG_STDOUT,LOG_ASSERT,LOG_STATS", s = "dassl", variableFilter = ".*"));
 end TestStack_with_current_source2;

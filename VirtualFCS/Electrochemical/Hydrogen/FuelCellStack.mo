@@ -12,6 +12,8 @@ model FuelCellStack
   //[4] R. Omrani et B. Shabani, « An analytical model for hydrogen and nitrogen crossover rates in proton exchange membrane fuel cells », International Journal of Hydrogen Energy, vol. 45, nᵒ 55, p. 31041‑31055, nov. 2020, doi: 10.1016/j.ijhydene.2020.08.089.
   // for heat exchange
   //[5] D. Musse et D. Lee, « Computational evaluation of PEMFC performance based on bipolar plate material types », Energy Reports, vol. 11, nᵒ 18, p. 4886‑4903, juin 2024, doi: 10.1016/j.egyr.2024.04.052.
+  // for dimention off cell and bipolar plate
+  // [6] [1] P. von Tettau et al., « Laboratory assessments applied to mass-produced automotive fuel cells », International Journal of Hydrogen Energy, vol. 52, p. 1127‑1136, janv. 2024, doi: 10.1016/j.ijhydene.2023.10.309.
   //*** DEFINE REPLACEABLE PACKAGES ***//
   // System
   outer Modelica.Fluid.System system "System properties";
@@ -34,7 +36,7 @@ model FuelCellStack
   parameter Real W_FC_stack(unit = "m") = 0.582 "FC stack width";
   parameter Real H_FC_stack(unit = "m") = 0.156 "FC stack height";
   parameter Real vol_FC_stack(unit = "m3") = L_FC_stack*W_FC_stack*H_FC_stack "FC stack volume";
-  parameter Real N_FC_stack(unit = "1") = 455 "FC stack number of cells";
+  parameter Real N_FC_stack(unit = "1") = 370 "FC stack number of cells";
   parameter Real A_FC_surf(unit = "m2") = 2*(L_FC_stack*W_FC_stack) + 2*(L_FC_stack*H_FC_stack) + 2*(W_FC_stack*H_FC_stack) "FC stack surface area";
   // Thermal parameters
   parameter Real Cp_FC_stack(unit = "J/(kg.K)") = 800 "FC stack specific heat capacity";
@@ -49,19 +51,32 @@ model FuelCellStack
   //thickness of catalist layer in anode [2]
   parameter Modelica.Units.SI.Length t_CL_ca = 10*10^(-6);
   //thickness of catalist layer in cathode [2]
-  parameter Modelica.Units.SI.Length t_GDL_an = 180*10^(-6);
-  //thickness of catalist layer in anode [2]
-  parameter Modelica.Units.SI.Length t_GDL_ca = 180*10^(-6);
-  //thickness of catalist layer in cathode [2]
-  parameter Modelica.Units.SI.Length t_mem = 25*10^(-6);
-  parameter Modelica.Units.SI.Length t_bp = 1/100;
-  // thickness of bipolar plate betwwen channel and coollant (arbitrary)
-  parameter Modelica.Units.SI.Length h_channel = 0.2/100;
-  // height of channel (arbitrary)
-  parameter Modelica.Units.SI.Length w_channel = 0.2/100;
-  // witdh of channel(arbitrary)
-  parameter Modelica.Units.SI.Length w_land = 0.2/100;
-  // width of land part next to channel (arbitrary)
+  parameter Modelica.Units.SI.Length t_GDL_an = 240*10^(-6);
+  //thickness of gaz diffusion layer in anode [6]
+  parameter Modelica.Units.SI.Length t_GDL_ca = 240*10^(-6);
+  //thickness of gaz diffusion layer in cathode [6]
+  parameter Modelica.Units.SI.Length t_mem = 20*10^(-6);
+  // thickness of memebrane [6]
+  parameter Modelica.Units.SI.Length t_bp = 0.13/100;
+  // thickness of bipolar plate betwwen channel and coollant (toyota review 66)
+  parameter Real number_channel = 72 "number of channel by cell [6]";
+  parameter Modelica.Units.SI.Length channel_length = Cell_Area/(w_channel_an + w_land_an)/number_channel;
+  parameter Modelica.Units.SI.Area channel_area_an = 0.121/10^6;
+  // area of channel anode [6]
+  parameter Modelica.Units.SI.Length channel_perimeter_an = 1.5/1000;
+  // perimeter of channel anode [6]
+  parameter Modelica.Units.SI.Area channel_area_ca = 0.204/10^6;
+  // area of channel cathode [6]
+  parameter Modelica.Units.SI.Length channel_perimeter_ca = 1.6/1000;
+  // perimeter of channel cathode [6]
+  parameter Modelica.Units.SI.Length w_channel_an = 0.56/1000;
+  // witdh of channel [6]
+  parameter Modelica.Units.SI.Length w_land_an = 0.84/1000;
+  // width of land part next to channel [6]
+  parameter Modelica.Units.SI.Length w_channel_ca = 0.61/1000;
+  // witdh of channel [6]
+  parameter Modelica.Units.SI.Length w_land_ca = 0.79/1000;
+  // width of land part next to channel [6]
   //thickness of the membrane
   parameter Modelica.Units.SI.Area Cell_Area = 0.0237;
   // active area of a single cell
@@ -95,11 +110,12 @@ model FuelCellStack
   parameter Modelica.Units.SI.ThermalConductivity T_conductivity_GDL = 1.6 "ThermalConductivity of gas difusion layer";
   parameter Modelica.Units.SI.ThermalConductivity T_conductivity_CL = 8 "ThermalConductivity of catalyst layer";
   parameter Modelica.Units.SI.ThermalConductivity T_conductivity_mem = 0.67 "ThermalConductivity of PEM";
-  parameter Modelica.Units.SI.ThermalConductivity T_conductivity_bp = 10.7 "ThermalConductivity of bipolar plate";
+  parameter Modelica.Units.SI.ThermalConductivity T_conductivity_bp = 21.9 "ThermalConductivity of bipolar plate";
+  // Conductivity of titanium [6]
   parameter Modelica.Units.SI.ThermalConductance Thermal_conductance_mem = T_conductivity_mem/t_mem*Cell_Area*N_FC_stack;
   parameter Modelica.Units.SI.ThermalConductance Thermal_conductance_an = 1/(t_CL_an/T_conductivity_CL + t_GDL_an/T_conductivity_GDL)*Cell_Area*N_FC_stack;
   parameter Modelica.Units.SI.ThermalConductance Thermal_conductance_ca = 1/(t_CL_ca/T_conductivity_CL + t_GDL_ca/T_conductivity_GDL)*Cell_Area*N_FC_stack;
-  parameter Modelica.Units.SI.ThermalConductance Thermal_conductance_coollant = T_conductivity_bp/(t_bp + h_channel)*Cell_Area*N_FC_stack*2*(w_channel/(w_channel + w_land));
+  parameter Modelica.Units.SI.ThermalConductance Thermal_conductance_coollant = T_conductivity_bp/t_bp*Cell_Area*N_FC_stack*(w_land_an/(w_channel_an + w_land_an) + w_land_ca/(w_channel_ca + w_land_ca));
   //thermic transfer with only the bp consider and no contribution of gas in the channel
   //*** DECLARE VARIABLES ***//
   // Physical constants
@@ -115,6 +131,8 @@ model FuelCellStack
   Modelica.Units.SI.Voltage V_act;
   Modelica.Units.SI.Voltage V_ohm;
   Modelica.Units.SI.Power P_th;
+  Modelica.Units.SI.Power P_in;
+  Modelica.Units.SI.Power P_out;
   // partial pressure
   Modelica.Units.SI.Pressure p_O2_log(min = 0);
   Modelica.Units.SI.Pressure p_0 = 100000;
@@ -195,6 +213,7 @@ model FuelCellStack
   //*** INSTANTIATE COMPONENTS ***//
   // Efficiencies
   Real eta_FC_LHV(unit = "100") "Lower heating value efficiency of fuel cell stack";
+   Modelica.Units.SI.MassFlowRate mass_balance[4];
   // Electrical Components
   // Fluid Components
   Modelica.Fluid.Interfaces.FluidPort_b port_b_H2(redeclare package Medium = Anode_Medium) annotation(
@@ -205,7 +224,7 @@ model FuelCellStack
     Placement(transformation(origin = {-140, -126}, extent = {{-10, -10}, {10, 10}}), iconTransformation(origin = {-30, -90}, extent = {{-10, -10}, {10, 10}})));
   Modelica.Fluid.Interfaces.FluidPort_b port_b_Coolant(redeclare package Medium = Coolant_Medium) annotation(
     Placement(transformation(origin = {140, -126}, extent = {{-10, -10}, {10, 10}}), iconTransformation(origin = {30, -90}, extent = {{-10, -10}, {10, 10}})));
-  Modelica.Fluid.Pipes.DynamicPipe pipeCoolant(redeclare package Medium = Coolant_Medium, T_start = 333.15, diameter = 0.003, length = 1, modelStructure = Modelica.Fluid.Types.ModelStructure.a_vb, nNodes = N_el, nParallel = 500, p_a_start = 102502, use_HeatTransfer = true) annotation(
+  Modelica.Fluid.Pipes.DynamicPipe pipeCoolant(redeclare package Medium = Coolant_Medium, T_start = 333.15, diameter = 0.0004, length = channel_length, modelStructure = Modelica.Fluid.Types.ModelStructure.a_vb, nNodes = N_el, nParallel = N_FC_stack*number_channel, p_a_start = 102502, use_HeatTransfer = true) annotation(
     Placement(transformation(origin = {0, -126}, extent = {{-10, -10}, {10, 10}}, rotation = -0)));
   // Thermal Components
   // Other Components
@@ -227,9 +246,9 @@ model FuelCellStack
     Placement(visible = true, transformation(origin = {150, 80}, extent = {{-10, -10}, {10, 10}}, rotation = 0), iconTransformation(origin = {110, 70}, extent = {{-10, -10}, {10, 10}}, rotation = 0)));
   Modelica.Fluid.Interfaces.FluidPort_b port_b_Air(redeclare package Medium = Cathode_Medium) annotation(
     Placement(transformation(origin = {150, -102}, extent = {{-10, -10}, {10, 10}}), iconTransformation(origin = {110, -70}, extent = {{-10, -10}, {10, 10}})));
-  Modelica.Fluid.Pipes.DynamicPipe channelAnode(nParallel = 30000, length(displayUnit = "mm") = 0.15, diameter = 0.002, redeclare model FlowModel = Modelica.Fluid.Pipes.BaseClasses.FlowModels.DetailedPipeFlow, use_HeatTransfer = true, redeclare model HeatTransfer = Modelica.Fluid.Pipes.BaseClasses.HeatTransfer.LocalPipeFlowHeatTransfer, redeclare package Medium = Anode_Medium, nNodes = N_el, modelStructure = Modelica.Fluid.Types.ModelStructure.a_v_b, T_start = 333.15, p_a_start = 2e5) annotation(
+  Modelica.Fluid.Pipes.DynamicPipe channelAnode(nParallel = N_FC_stack*number_channel, length = channel_length, diameter = 0.0002, redeclare model FlowModel = Modelica.Fluid.Pipes.BaseClasses.FlowModels.DetailedPipeFlow, use_HeatTransfer = true, redeclare model HeatTransfer = Modelica.Fluid.Pipes.BaseClasses.HeatTransfer.LocalPipeFlowHeatTransfer, redeclare package Medium = Anode_Medium, nNodes = N_el, modelStructure = Modelica.Fluid.Types.ModelStructure.a_v_b, T_start = 333.15, p_a_start = 105000, isCircular = false, crossArea = channel_area_an, perimeter = channel_perimeter_an) annotation(
     Placement(transformation(origin = {-120, -74}, extent = {{-10, -10}, {10, 10}}, rotation = -90)));
-  Modelica.Fluid.Pipes.DynamicPipe channelCathode(nParallel = 30000, length(displayUnit = "mm") = 0.15, diameter = 0.002, redeclare model FlowModel = Modelica.Fluid.Pipes.BaseClasses.FlowModels.DetailedPipeFlow, use_HeatTransfer = true, redeclare model HeatTransfer = Modelica.Fluid.Pipes.BaseClasses.HeatTransfer.LocalPipeFlowHeatTransfer, redeclare package Medium = Cathode_Medium, nNodes = N_el, modelStructure = Modelica.Fluid.Types.ModelStructure.a_v_b, T_start = 333.15, p_a_start = 2e5) annotation(
+  Modelica.Fluid.Pipes.DynamicPipe channelCathode(nParallel = N_FC_stack*number_channel, length = channel_length, diameter = 0.0002, redeclare model FlowModel = Modelica.Fluid.Pipes.BaseClasses.FlowModels.DetailedPipeFlow, use_HeatTransfer = true, redeclare model HeatTransfer = Modelica.Fluid.Pipes.BaseClasses.HeatTransfer.LocalPipeFlowHeatTransfer, redeclare package Medium = Cathode_Medium, nNodes = N_el, modelStructure = Modelica.Fluid.Types.ModelStructure.a_v_b, T_start = 333.15, p_a_start = 1.2e5, isCircular = false, crossArea = channel_area_ca, perimeter = channel_perimeter_ca) annotation(
     Placement(transformation(origin = {130, -74}, extent = {{10, -10}, {-10, 10}}, rotation = 90)));
   Modelica.Thermal.HeatTransfer.Components.ThermalConductor thermalConductor_an[N_el](each G = Thermal_conductance_an/N_el) annotation(
     Placement(transformation(origin = {-50, -74}, extent = {{-10, -10}, {10, 10}})));
@@ -238,16 +257,21 @@ model FuelCellStack
   Modelica.Units.SI.Power Power_stack;
   Modelica.Blocks.Math.Add water_prod annotation(
     Placement(transformation(origin = {2, 50}, extent = {{-10, -10}, {10, 10}}, rotation = -90)));
-  Real mass_balance;
+
   Modelica.Thermal.HeatTransfer.Components.HeatCapacitor heatCapacitor[N_el](each C = Cp_FC_stack*m_FC_stack/N_el, each T(start = 333.15, fixed = true), each der_T(fixed = false)) annotation(
     Placement(transformation(origin = {0, -61}, extent = {{-10, -10}, {10, 10}})));
   Modelica.Fluid.Sensors.Temperature inlet_air_temperature(redeclare package Medium = Cathode_Medium) annotation(
     Placement(transformation(origin = {106, 104}, extent = {{10, -10}, {-10, 10}})));
   Modelica.Blocks.Interfaces.RealOutput OER_Cathode annotation(
-    Placement(transformation(origin = {116, -140}, extent = {{-10, -10}, {10, 10}}), iconTransformation(origin = {108, -92}, extent = {{-10, -10}, {10, 10}})));
+    Placement(transformation(origin = {116, -140}, extent = {{-10, -10}, {10, 10}}), iconTransformation(origin = {110, 108}, extent = {{-10, -10}, {10, 10}})));
   //Modelica.Media.Water.StandardWater. WaterHumidityProps;
   Modelica.Blocks.Interfaces.RealOutput phi_Cathode annotation(
     Placement(transformation(origin = {80, -140}, extent = {{-10, -10}, {10, 10}}), iconTransformation(origin = {108, -112}, extent = {{-10, -10}, {10, 10}})));
+  Modelica.Blocks.Interfaces.RealOutput purge_valve_indication annotation(
+    Placement(transformation(origin = {-54, -154}, extent = {{-10, -10}, {10, 10}}, rotation = -90), iconTransformation(origin = {-84, -136}, extent = {{-10, -10}, {10, 10}}, rotation = -90)));
+  Modelica.Blocks.Interfaces.RealOutput Phi_cathode_out annotation(
+    Placement(transformation(origin = {54, -146}, extent = {{-10, -10}, {10, 10}}, rotation = -90), iconTransformation(origin = {76, -138}, extent = {{-10, -10}, {10, 10}}, rotation = -90)));
+ 
   Modelica.Fluid.Sensors.Temperature outlet_air_temperature(redeclare package Medium = Cathode_Medium) annotation(
     Placement(transformation(origin = {205, -91}, extent = {{10, -10}, {-10, 10}})));
   Modelica.Thermal.HeatTransfer.Interfaces.HeatPort_a heatPort[N_el] annotation(
@@ -256,20 +280,20 @@ model FuelCellStack
     Placement(transformation(origin = {-84, -142}, extent = {{10, -10}, {-10, 10}}), iconTransformation(origin = {-110, -90}, extent = {{10, -10}, {-10, 10}})));
   Modelica.Blocks.Interfaces.RealOutput phi_Anode annotation(
     Placement(transformation(origin = {-122, -142}, extent = {{10, -10}, {-10, 10}}), iconTransformation(origin = {-110, -110}, extent = {{10, -10}, {-10, 10}})));
-  Modelica.Fluid.Sensors.Temperature inlet_hydrogen_temperature(redeclare package Medium = Cathode_Medium) annotation(
+  Modelica.Fluid.Sensors.Temperature inlet_hydrogen_temperature(redeclare package Medium = Anode_Medium) annotation(
     Placement(transformation(origin = {-120, 98}, extent = {{-10, -10}, {10, 10}})));
   Modelica.Units.SI.Current i_lim_react "Limiting current from reactive flows";
-  Fluid.Membrane CL_an(redeclare package Medium = Anode_Medium, V = 0.027, T_start = 353.15, X_start = {0.5, 0.4, 0.1}, p_start = 200100) annotation(
+  Fluid.Membrane CL_an(redeclare package Medium = Anode_Medium, V = N_FC_stack*Cell_Area*(t_GDL_an/2 + t_CL_an)*GDL_porosity, T_start = 353.15, X_start = {0.5, 0.4, 0.1}, p_start = 1.1e5) annotation(
     Placement(transformation(origin = {-60, 14}, extent = {{-10, -10}, {10, 10}}, rotation = -90)));
-  Fluid.Membrane CL_ca(redeclare package Medium = Cathode_Medium, V = 0.027, T_start = 353.15, p_start = 200100) annotation(
+  Fluid.Membrane CL_ca(redeclare package Medium = Cathode_Medium, V = N_FC_stack*Cell_Area*(t_GDL_ca/2 + t_CL_an)*GDL_porosity, T_start = 353.15, p_start = 1.3e5) annotation(
     Placement(transformation(origin = {80, 14}, extent = {{10, -10}, {-10, 10}}, rotation = 90)));
   Modelica.Blocks.Math.Gain nitogen_cross_over(k = -1) annotation(
     Placement(transformation(origin = {3, -7}, extent = {{-10, -10}, {10, 10}})));
   Modelica.Blocks.Math.Add water_prod_and_transfer(k1 = -1, k2 = -1) annotation(
     Placement(transformation(origin = {36, 14}, extent = {{-10, -10}, {10, 10}})));
-  VirtualFCS.Fluid.Membrane GDL_an(redeclare package Medium = Anode_Medium, T_start = 353.15, V = 0.027, X_start = {0.5, 0.4, 0.1}, p_start = 200010) annotation(
+  VirtualFCS.Fluid.Membrane GDL_an(redeclare package Medium = Anode_Medium, T_start = 353.15, V = N_FC_stack*number_channel*channel_length*channel_area_an + N_FC_stack*Cell_Area*t_GDL_an/2*GDL_porosity, X_start = {0.5, 0.4, 0.1}, p_start = 1.1e5) annotation(
     Placement(transformation(origin = {-120, 13}, extent = {{-10, -10}, {10, 10}}, rotation = -90)));
-  VirtualFCS.Fluid.Membrane GDL_ca(redeclare package Medium = Cathode_Medium, T_start = 353.15, V = 0.027, p_start = 200100) annotation(
+  VirtualFCS.Fluid.Membrane GDL_ca(redeclare package Medium = Cathode_Medium, T_start = 353.15, V = N_FC_stack*number_channel*channel_length*channel_area_ca + N_FC_stack*Cell_Area*t_GDL_ca/2*GDL_porosity, p_start = 1.3e5) annotation(
     Placement(transformation(origin = {130, 14}, extent = {{10, -10}, {-10, 10}}, rotation = 90)));
   Modelica.Blocks.Math.Gain diff_trought_GDL_an[3](each k = -1) annotation(
     Placement(transformation(origin = {-89, 14}, extent = {{-6, -6}, {6, 6}})));
@@ -279,6 +303,12 @@ model FuelCellStack
     Placement(transformation(origin = {92, -102}, extent = {{10, -10}, {-10, 10}}, rotation = -90)));
   Modelica.Thermal.HeatTransfer.Components.ThermalConductor thermalConductor_mem[N_el](each G = Thermal_conductance_mem/N_el) annotation(
     Placement(transformation(origin = {0, -36}, extent = {{-10, -10}, {10, 10}})));
+  Modelica.Fluid.Sensors.Temperature outlet_hydrogen_temperature(redeclare package Medium = Anode_Medium) annotation(
+    Placement(transformation(origin = {-194, -89}, extent = {{-10, -10}, {10, 10}})));
+  Modelica.Fluid.Sensors.Temperature inlet_coolant_temperature(redeclare package Medium = Coolant_Medium) annotation(
+    Placement(transformation(origin = {-170, -141}, extent = {{10, -10}, {-10, 10}})));
+  Modelica.Fluid.Sensors.Temperature outlet_coolant_temperature(redeclare package Medium = Coolant_Medium) annotation(
+    Placement(transformation(origin = {179, -135}, extent = {{10, -10}, {-10, 10}})));
 equation
   i_lim_react = min(port_a_H2.m_flow*inStream(port_a_H2.Xi_outflow[i_H2])/(Anode_Medium.MMX[i_H2]/(F*2)*N_FC_stack), port_a_Air.m_flow*inStream(port_a_Air.Xi_outflow[i_O2])/(Cathode_Medium.MMX[i_O2]/(F*4)*N_FC_stack));
   j_cell*Cell_Area = currentSensor.i;
@@ -288,32 +318,42 @@ equation
   T_ave = (T_an + T_ca)/2;
 // humidity
   for i in 1:N_el loop
-    phi_Anode_v[i] = (P_CL_an_in[i_H2O]*(N_el - i) + P_CL_an_out[i_H2O]*i)/N_el/Modelica.Media.Water.StandardWater.saturationPressure(channelAnode.heatPorts[i].T);
-    phi_Cathode_v[i] = (P_CL_ca_in[i_H2O]*(N_el - i) + P_CL_ca_out[i_H2O]*i)/N_el/Modelica.Media.Water.StandardWater.saturationPressure(channelCathode.heatPorts[i].T);
-  end for;
+     phi_Anode_v[i] = ((P_CL_an_out[i_H2O] - P_CL_an_in[i_H2O])/(N_el-1)*(i-1)+ P_CL_an_in[i_H2O])/Modelica.Media.Water.StandardWater.saturationPressure(channelAnode.heatPorts[i].T);
+  phi_Cathode_v[i] = ((P_CL_ca_out[i_H2O] - P_CL_ca_in[i_H2O])/(N_el-1)*(i-1)+ P_CL_ca_in[i_H2O])/Modelica.Media.Water.StandardWater.saturationPressure(channelCathode.heatPorts[i].T);
+    end for;
   phi_Cathode = Cathode_Medium.relativeHumidity(Cathode_Medium.setState_pTX(CL_ca.medium.p, T_ca, CL_ca.medium.X));
-  phi_Anode = Anode_Medium.relativeHumidity(Anode_Medium.setState_pTX(CL_ca.medium.p, T_an, CL_an.medium.X));
+  phi_Anode = Anode_Medium.relativeHumidity(Anode_Medium.setState_pTX(CL_an.medium.p, T_an, CL_an.medium.X));
+  //Drain_valve_indication = max(max(phi_Anode_v[end], phi_Cathode_v[end]), port_b_H2.Xi_outflow[i_N2]*30);
+  purge_valve_indication = max(phi_Anode_v[end], P_GDL_an_ave[i_N2]/port_a_H2.p*2);
+  Phi_cathode_out = phi_Cathode_v[end];
   lambda_an = if phi_Anode < 1 then 0.043 + 17.81*phi_Anode - 39.85*phi_Anode^2 + 36*phi_Anode^3 else 14 + 1.4*(phi_Anode - 1)*2*1.27/1000;
 // could be modified to have an expression dependant of temperature
   lambda_ca = if phi_Cathode < 1 then 0.043 + 17.81*phi_Cathode - 39.85*phi_Cathode^2 + 36*phi_Cathode^3 else 14 + 1.4*(phi_Cathode - 1)*2*1.27/1000;
   lambda_m = (lambda_an + lambda_ca)/2;
 // hydrogen and oxygen excess ratio
-  O2_mass_flow*OER_Cathode = port_a_Air.m_flow*inStream(port_a_Air.Xi_outflow[i_O2]);
+  OER_Cathode = smooth(1, if (O2_mass_flow < -10^(-4) or O2_mass_flow > 10^(-4)) then channelCathode.m_flows[1]*inStream(port_a_Air.Xi_outflow[i_O2])/O2_mass_flow else 0);
   H2_mass_flow*OER_Anode = port_a_H2.m_flow*inStream(port_a_H2.Xi_outflow[i_H2]);
 //transfer in the membrane
-  H2_mass_flow = Anode_Medium.MMX[i_H2]/(F*2)*N_FC_stack*min(i_lim_react, currentSensor.i);
+  H2_mass_flow = Anode_Medium.MMX[i_H2]/(F*2)*N_FC_stack*currentSensor.i;
   O2_mass_flow = Cathode_Medium.MMX[i_O2]/(F*4)*N_FC_stack*min(i_lim_react, currentSensor.i);
   H2_mem_crossover = mem_H2_diff/t_mem*P_CL_an_ave[i_H2]*Cell_Area*N_FC_stack*Anode_Medium.MMX[i_H2];
-  N2_mem_crossover = mem_N2_diff/t_mem*(P_CL_an_ave[i_N2] - P_CL_an_ave[i_N2])*Cell_Area*N_FC_stack*Anode_Medium.MMX[i_N2];
+  N2_mem_crossover = mem_N2_diff/t_mem*(P_CL_ca_ave[i_N2] - P_CL_an_ave[i_N2])*Cell_Area*N_FC_stack*Anode_Medium.MMX[i_N2];
   O2_mem_crossover_reac = mem_H2_diff/t_mem*P_CL_an_ave[i_H2]*Cell_Area*N_FC_stack*Anode_Medium.MMX[i_O2]/2;
   j_H2_crossover = H2_mem_crossover*F*2/(Anode_Medium.MMX[i_H2]*N_FC_stack*Cell_Area);
   CL_an.mass_flow_a = {-H2_mass_flow - H2_mem_crossover, water_mass_flow_billan, N2_mem_crossover};
-  CL_ca.mass_flow_a[i_O2] = -O2_mass_flow;
+  CL_ca.mass_flow_a[i_O2] = -O2_mass_flow - O2_mem_crossover_reac;
   GDL_an.mass_flow_b = {0, 0, 0};
   GDL_ca.mass_flow_b = {0, 0, 0};
   CL_an.mass_flow_b = -Cell_Area*N_FC_stack/(t_GDL_an*R*T_an)*D_an.*(P_CL_an_ave .- P_GDL_an_ave).*Anode_Medium.MMX;
   CL_ca.mass_flow_b = -Cell_Area*N_FC_stack/(t_GDL_ca*R*T_ca)*D_ca.*(P_CL_ca_ave .- P_GDL_ca_ave).*Cathode_Medium.MMX;
-  mass_balance = sum(CL_an.mass_flow_a + CL_ca.mass_flow_a);
+  
+  mass_balance[i_H2] = port_a_H2.m_flow*inStream(port_a_H2.Xi_outflow[i_H2]) + port_b_H2.m_flow*actualStream(port_b_H2.Xi_outflow[i_H2]) - H2_mass_flow - H2_mem_crossover;
+  
+  mass_balance[i_H2O] = port_a_H2.m_flow*inStream(port_a_H2.Xi_outflow[i_H2O]) + port_b_H2.m_flow*actualStream(port_b_H2.Xi_outflow[i_H2O]) + port_a_Air.m_flow*inStream(port_a_Air.Xi_outflow[i_H2O]) + port_b_Air.m_flow*actualStream(port_b_Air.Xi_outflow[i_H2O])+ H2_mass_flow +  O2_mass_flow + H2_mem_crossover + O2_mem_crossover_reac;
+  
+  mass_balance[i_N2] = port_a_H2.m_flow*inStream(port_a_H2.Xi_outflow[i_N2]) + port_b_H2.m_flow*actualStream(port_b_H2.Xi_outflow[i_N2]) +  port_a_Air.m_flow*inStream(port_a_Air.Xi_outflow[i_N2]) + port_b_Air.m_flow*actualStream(port_b_Air.Xi_outflow[i_N2]);
+  
+  mass_balance[4] = port_a_Air.m_flow*inStream(port_a_Air.Xi_outflow[i_O2]) + port_b_Air.m_flow*actualStream(port_b_Air.Xi_outflow[i_O2]) - O2_mass_flow -O2_mem_crossover_reac;
   Power_stack = V_cell*N_FC_stack*pin_n.i;
 // water transfer
   Nd = 2.5*lambda_m/22;
@@ -349,7 +389,8 @@ equation
   P_CL_ca_in = P_GDL_ca_in + (P_CL_ca_ave - P_GDL_ca_ave);
   P_CL_ca_out = P_GDL_ca_out + (P_CL_ca_ave - P_GDL_ca_ave);
 //average activities of H2 and H2O based on logarithmic average of O2 partial pressure
-  p_O2_log = (P_GDL_ca_in[i_O2] - P_GDL_ca_out[i_O2])/(log(P_GDL_ca_in[i_O2]) - log(P_GDL_ca_out[i_O2])) - (P_GDL_ca_ave[i_O2] - P_CL_ca_ave[i_O2]);
+  p_O2_log = (P_GDL_ca_in[i_O2] - P_GDL_ca_out[i_O2])/(log(P_GDL_ca_in[i_O2]) - log(P_GDL_ca_out[i_O2])) + (P_CL_ca_ave[i_O2] - P_GDL_ca_ave[i_O2]);
+//(P_CL_ca_in[i_O2] - P_CL_ca_out[i_O2])/(log(P_CL_ca_in[i_O2]) - log(P_CL_ca_out[i_O2]));
 // ELECTROCHEMICAL EQUATIONS //
 // Calculate the stack voltage
 // activation over voltage
@@ -373,6 +414,8 @@ equation
   potentialSource.v = N_FC_stack*V_cell;
 // THERMAL EQUATIONS //
   P_th = (1.481 - V_cell)*currentSensor.i*N_FC_stack;
+  P_in = inStream(port_a_H2.h_outflow)*port_a_H2.m_flow + inStream(port_a_Air.h_outflow)*port_a_Air.m_flow + inStream(port_a_Coolant.h_outflow)*port_a_Coolant.m_flow;
+  P_out = actualStream(port_b_H2.h_outflow)*port_b_H2.m_flow + actualStream(port_b_Air.h_outflow)*port_b_Air.m_flow + actualStream(port_b_Coolant.h_outflow)*port_b_Coolant.m_flow;
   CL_an.Q_flow = 0;
   CL_ca.Q_flow = 0;
   GDL_an.Q_flow = 0;
@@ -381,7 +424,7 @@ equation
   prescribedHeatFlow_an.Q_flow = fill(V_act_an*j_cell*Cell_Area*N_FC_stack/N_el, N_el);
   prescribedHeatFlow_ca.Q_flow = fill(((141.80*10^6*Anode_Medium.MMX[1]/(2*F) - (V_cell + V_act_an))*j_cell*Cell_Area*N_FC_stack + 119.96*10^6*H2_mem_crossover)/N_el, N_el);
 // Efficiencies
-  eta_FC_LHV = (V_cell/1.253)*100;
+  eta_FC_LHV = if currentSensor.i > 0 then potentialSource.v*currentSensor.i/(119.96*10^6*(H2_mass_flow + H2_mem_crossover)) else 0;
 //*** DEFINE CONNECTIONS ***//
   connect(pipeCoolant.port_b, port_b_Coolant) annotation(
     Line(points = {{10, -126}, {140, -126}}, color = {255, 0, 0}, thickness = 1));
@@ -445,8 +488,6 @@ equation
     Line(points = {{40, -74}, {0, -74}, {0, -70}}, color = {191, 0, 0}, thickness = 0.5));
   connect(thermalConductor_ca.port_b, channelCathode.heatPorts) annotation(
     Line(points = {{60, -74}, {126, -74}}, color = {191, 0, 0}, thickness = 0.5));
-  connect(heatPort, heatCapacitor.port) annotation(
-    Line(points = {{48, -50}, {22, -50}, {22, -74}, {0, -74}, {0, -70}}, color = {191, 0, 0}, thickness = 0.5));
   connect(thermalConductor_an[end:-1:1].port_a, channelAnode.heatPorts) annotation(
     Line(points = {{-60, -74}, {-116, -74}}, color = {191, 0, 0}, thickness = 0.5));
   connect(channelAnode.heatPorts, thermalConductor_mem[end:-1:1].port_a) annotation(
@@ -457,9 +498,17 @@ equation
     Line(points = {{-116, -74}, {-84, -74}, {-84, -86}}, color = {127, 0, 0}, thickness = 0.5));
   connect(prescribedHeatFlow_ca.port, channelCathode.heatPorts) annotation(
     Line(points = {{92, -92}, {92, -74}, {126, -74}}, color = {191, 0, 0}, thickness = 0.5));
+  connect(heatPort, heatCapacitor.port) annotation(
+    Line(points = {{48, -50}, {22, -50}, {22, -74}, {0, -74}, {0, -70}}, color = {191, 0, 0}, thickness = 0.5));
+  connect(outlet_hydrogen_temperature.port, port_b_H2) annotation(
+    Line(points = {{-194, -98}, {-150, -98}, {-150, -100}}, color = {0, 127, 255}));
+  connect(outlet_coolant_temperature.port, port_b_Coolant) annotation(
+    Line(points = {{180, -144}, {140, -144}, {140, -126}}, color = {0, 127, 255}));
+  connect(inlet_coolant_temperature.port, port_a_Coolant) annotation(
+    Line(points = {{-170, -150}, {-140, -150}, {-140, -126}}, color = {0, 127, 255}));
   annotation(
     Diagram(coordinateSystem(extent = {{-150, -150}, {150, 150}}, initialScale = 0.1)),
-    Icon(coordinateSystem(extent = {{-150, -150}, {150, 150}}, initialScale = 0.1), graphics = {Line(origin = {20.1754, 1.92106}, points = {{0, 78}, {0, -80}, {0, -82}}), Rectangle(origin = {80, 0}, fillColor = {0, 178, 227}, pattern = LinePattern.None, fillPattern = FillPattern.Solid, extent = {{-20, 100}, {20, -100}}), Line(origin = {40.1315, 2}, points = {{0, 78}, {0, -80}, {0, -82}}), Line(origin = {0.219199, 1.92106}, points = {{0, 78}, {0, -80}, {0, -82}}), Line(origin = {-40.0001, 1.61404}, points = {{0, 78}, {0, -80}, {0, -82}}), Rectangle(origin = {-80, 0}, fillColor = {170, 0, 0}, pattern = LinePattern.None, fillPattern = FillPattern.Solid, extent = {{-20, 100}, {20, -100}}), Text(origin = {10, -54}, textColor = {255, 0, 0}, extent = {{-11, 6}, {11, -6}}, textString = "K"), Line(origin = {-20.0439, -0.307018}, points = {{0, 80}, {0, -80}, {0, -80}}), Rectangle(origin = {35, 54}, fillColor = {177, 177, 177}, fillPattern = FillPattern.Vertical, extent = {{-95, 26}, {25, -134}}), Text(origin = {-80, 6}, extent = {{-26, 24}, {26, -24}}, textString = "A"), Text(origin = {80, 6}, extent = {{-26, 24}, {26, -24}}, textString = "C"), Text(origin = {74, -94}, extent = {{-22, 10}, {22, -10}}, textString = "OER"), Text(origin = {75, -113}, extent = {{-21, 11}, {21, -11}}, textString = "phi"), Text(origin = {-86, -94}, extent = {{-22, 10}, {22, -10}}, textString = "OER"), Text(origin = {-85, -113}, extent = {{-21, 11}, {21, -11}}, textString = "phi")}),
+    Icon(coordinateSystem(extent = {{-150, -150}, {150, 150}}, initialScale = 0.1), graphics = {Line(origin = {20.1754, 1.92106}, points = {{0, 78}, {0, -80}, {0, -82}}), Rectangle(origin = {80, 0}, fillColor = {0, 178, 227}, pattern = LinePattern.None, fillPattern = FillPattern.Solid, extent = {{-20, 100}, {20, -100}}), Line(origin = {40.1315, 2}, points = {{0, 78}, {0, -80}, {0, -82}}), Line(origin = {0.219199, 1.92106}, points = {{0, 78}, {0, -80}, {0, -82}}), Line(origin = {-40.0001, 1.61404}, points = {{0, 78}, {0, -80}, {0, -82}}), Rectangle(origin = {-80, 0}, fillColor = {170, 0, 0}, pattern = LinePattern.None, fillPattern = FillPattern.Solid, extent = {{-20, 100}, {20, -100}}), Text(origin = {10, -54}, textColor = {255, 0, 0}, extent = {{-11, 6}, {11, -6}}, textString = "K"), Line(origin = {-20.0439, -0.307018}, points = {{0, 80}, {0, -80}, {0, -80}}), Rectangle(origin = {35, 54}, fillColor = {177, 177, 177}, fillPattern = FillPattern.Vertical, extent = {{-95, 26}, {25, -134}}), Text(origin = {-80, 6}, extent = {{-26, 24}, {26, -24}}, textString = "A"), Text(origin = {80, 6}, extent = {{-26, 24}, {26, -24}}, textString = "C"), Text(origin = {82, 110}, extent = {{-22, 10}, {22, -10}}, textString = "OER"), Text(origin = {75, -113}, extent = {{-21, 11}, {21, -11}}, textString = "phi"), Text(origin = {-86, -94}, extent = {{-22, 10}, {22, -10}}, textString = "OER"), Text(origin = {-85, -113}, extent = {{-21, 11}, {21, -11}}, textString = "phi")}),
     Documentation(info = "<html><head></head><body>This model describes the dynamic behaviour of a proton exchange membrane fuel cell (PEMFC) stack. The model includes components describing the electrical, fluidic, and thermal properties of the stack.&nbsp;<div><br></div><div>The electrical performance is modelled using a 0-D polarization curve model , which incorporates Nernstian thermodynamic effects due to hydrogen and oxygen pressure changes, Tafel kinetics to calculate activation overpotentials, and an empirical relationship to calculate mass-transport overpotentials. These effects are combined in&nbsp;<span style=\"font-family: 'Courier New';\">potentialSource.v</span><span style=\"font-family: 'Courier New'; font-size: 12pt;\">,</span>which calculates the open-circuit voltage for a single cell, adjusts for hydrogen and oxygen partial pressures, subtracts the activation and mass-transport overpotentials, and finally multiplies by the number of cells in the stack. A simple resistor is included after the potential source to cover all Ohmic resistive losses in the fuel cell. Default parameters fit the polarization curve given by Powercell in their Powercellution data sheet, available <a href=\"https://powercellution.com/p-stack\">here</a>.</div><div><br></div><div>The fluidic performance is modelled using simple ideal flow components for the air and hydrogen gas lines, connected to mass sink boundary conditions. The magnitude of the mass sink is coupled to the electrical current in the stack using Faraday's law.&nbsp;&nbsp;
 </div><div><br></div><div>The thermal performance is considered by coupling a model describing the flow of liquid coolant to a thermal heat source. The magnitude of the heat source is calculated using the higher heating value of hydrogen and the calculated electrical voltage of the cell.<div><br></div><div>The hydrogen, air, and coolant ports can be connected to their respective subsystems, either by using the <a href=\"modelica://VirtualFCS.SubSystems.FuelCellSubSystems\">FuelCellSubSystems</a> block, or individual <a href=\"modelica://VirtualFCS.SubSystems.Hydrogen.SubSystemHydrogen\">SubSystemHydrogen</a>, <a href=\"modelica://VirtualFCS.SubSystems.Air.SubSystemAir\">SubSystemAir</a>, and <a href=\"modelica://VirtualFCS.SubSystems.Cooling.SubSystemCooling\">SubSystemCooling</a> blocks.<br>&nbsp; 
 
@@ -558,7 +607,7 @@ equation
 
 
 </div></div></body></html>"),
-    experiment(StartTime = 0, StopTime = 1, Tolerance = 1e-06, Interval = 0.002),
-    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts",
+    experiment(StartTime = 0, StopTime = 1000, Tolerance = 1e-06, Interval = 1),
+    __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts",
     __OpenModelica_simulationFlags(lv = "LOG_STDOUT,LOG_ASSERT,LOG_STATS", s = "dassl", variableFilter = ".*"));
 end FuelCellStack;

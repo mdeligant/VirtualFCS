@@ -9,7 +9,7 @@ model TestStack_with_resistor_control_OER
   replaceable package Coolant_Medium = Modelica.Media.Water.ConstantPropertyLiquidWater constrainedby Modelica.Media.Interfaces.PartialMedium;
   Electrochemical.Hydrogen.FuelCellStack fuelCellStack(redeclare package Cathode_Medium = Cathode_Medium) annotation(
     Placement(transformation(origin = {1, 5}, extent = {{-34, -34}, {34, 34}})));
-  Modelica.Fluid.Sources.Boundary_pT SourcePressureAir(nPorts = 1, p = 2e5, redeclare package Medium = Cathode_Medium) annotation(
+  Modelica.Fluid.Sources.Boundary_pT SourcePressureAir(nPorts = 1, p = 2e5, redeclare package Medium = Cathode_Medium, X = {0.1904, 0.03, 0.7796}, T = 341.15) annotation(
     Placement(transformation(origin = {52, 20}, extent = {{10, -10}, {-10, 10}})));
   Modelica.Fluid.Sources.MassFlowSource_T SourceWater(nPorts = 1, m_flow = 2, T = 341.15, redeclare package Medium = Coolant_Medium) annotation(
     Placement(transformation(origin = {-26, -46}, extent = {{-10, -10}, {10, 10}})));
@@ -21,15 +21,15 @@ model TestStack_with_resistor_control_OER
     Placement(transformation(origin = {90, -10}, extent = {{10, -10}, {-10, 10}})));
   VirtualFCS.Control.PID pid_OER_air(CSmax = 1, CSmin = 0, Kp = 1, PVmax = 4, PVmin = 0.1, Ti = 0.1, CSs(start = 1, fixed = true)) annotation(
     Placement(transformation(origin = {76, -48}, extent = {{10, -10}, {-10, 10}})));
-  Modelica.Blocks.Sources.Ramp air_OER_ramp(duration = 5, height = -348, offset = 350, startTime = 10) annotation(
+  Modelica.Blocks.Sources.Ramp air_OER_ramp(duration = 400, height = -348, offset = 350, startTime = 10) annotation(
     Placement(transformation(origin = {123, -44}, extent = {{10, -10}, {-10, 10}})));
   inner Modelica.Fluid.System system(m_flow_start = 1e-4)  annotation(
     Placement(transformation(origin = {90, 90}, extent = {{-10, -10}, {10, 10}})));
   Modelica.Fluid.Sources.Boundary_pT SinkPressureH2(redeclare package Medium = Anode_Medium, T = 293.15, nPorts = 1, p = 1.7e5) annotation(
     Placement(transformation(origin = {-82, -18}, extent = {{-10, -10}, {10, 10}})));
-  Modelica.Fluid.Sources.MassFlowSource_T SourceH2(redeclare package Medium = Anode_Medium, T = 293.15, X = {0.7, 0.29, 0.01}, m_flow = 0.004042092, nPorts = 1) annotation(
+  Modelica.Fluid.Sources.MassFlowSource_T SourceH2(redeclare package Medium = Anode_Medium, T = 311.15, X = {0.54, 0.45, 0.01}, m_flow = 0.004042092, nPorts = 1) annotation(
     Placement(transformation(origin = {-78, 18}, extent = {{-10, -10}, {10, 10}})));
-  Modelica.Electrical.Analog.Sources.RampCurrent rampCurrent(I = 440, duration = 80, offset = 10, startTime = 10) annotation(
+  Modelica.Electrical.Analog.Sources.RampCurrent rampCurrent(I = 440, duration = 400, offset = 10, startTime = 10) annotation(
     Placement(transformation(origin = {2, 64}, extent = {{10, -10}, {-10, 10}})));
 equation
   connect(fuelCellStack.port_a_Coolant, SourceWater.ports[1]) annotation(
@@ -57,5 +57,7 @@ equation
   connect(rampCurrent.n, fuelCellStack.pin_n) annotation(
     Line(points = {{-8, 64}, {-12, 64}, {-12, 40}}, color = {0, 0, 255}));
   annotation(
-    experiment(StartTime = 0, StopTime = 150, Tolerance = 1e-06, Interval = 0.02));
+    experiment(StartTime = 0, StopTime = 500, Tolerance = 1e-06, Interval = 0.02),
+  __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts",
+  __OpenModelica_simulationFlags(lv = "LOG_STDOUT,LOG_ASSERT,LOG_STATS", s = "dassl", variableFilter = ".*"));
 end TestStack_with_resistor_control_OER;

@@ -51,7 +51,6 @@ sen_Air_comp_speed=omega;
 
   r=Modelica.Constants.R/Medium.molarMass(in_props.state);
   Tin=in_props.T;
-  
 // Mechanical boundary conditions
   flange_a.phi = phi;
   flange_b.phi = phi;
@@ -71,11 +70,8 @@ sen_Air_comp_speed=omega;
   table_qm.u1 = beta;
   table_qm.u2 = N;
   table_qm.y*flow_scale_factor = qm*(T0/Tin)^0.5/(inlet.p/P0);
-  
-  
 // Mass balance
   inlet.m_flow + outlet.m_flow = 0;
-  
 //Energy conservation
   qm*(hout - hin) = tau*omega;
   Pcomp = qm*(hout - hin);

@@ -33,7 +33,7 @@ model TestStack_with_resistor_control_OER_both
     Placement(transformation(origin = {-52, -12}, extent = {{10, 10}, {-10, -10}})));
   VirtualFCS.Control.PID pid_OER_H2(CSmax = 1, CSmin = 0.001, CSs(start = 0.01, fixed = true), Kp = 1, PVmax = 100, PVmin = 0, Ti = 0.1) annotation(
     Placement(transformation(origin = {-82, -42}, extent = {{-10, -10}, {10, 10}})));
-  Modelica.Blocks.Sources.Ramp H2_OER_ramp(duration = 5, height = 2, offset = 1, startTime = 1) annotation(
+  Modelica.Blocks.Sources.Ramp H2_OER_ramp(duration = 5, height = 2, offset = 1.1, startTime = 1) annotation(
     Placement(transformation(origin = {-139, -38}, extent = {{-10, -10}, {10, 10}})));
   Modelica.Electrical.Analog.Basic.VariableResistor resistor annotation(
     Placement(transformation(origin = {-2, 76}, extent = {{10, -10}, {-10, 10}})));
@@ -75,5 +75,7 @@ equation
   connect(resistor.n, fuelCellStack.pin_n) annotation(
     Line(points = {{-12, 76}, {-12, 40}}, color = {0, 0, 255}));
   annotation(
-    experiment(StartTime = 0, StopTime = 150, Tolerance = 1e-06, Interval = 0.02));
+    experiment(StartTime = 0, StopTime = 150, Tolerance = 1e-06, Interval = 0.02),
+  __OpenModelica_commandLineOptions = "--matchingAlgorithm=PFPlusExt --indexReductionMethod=dynamicStateSelection -d=initialization,NLSanalyticJacobian -d=aliasConflicts -d=aliasConflicts -d=aliasConflicts",
+  __OpenModelica_simulationFlags(lv = "LOG_STDOUT,LOG_ASSERT,LOG_STATS", s = "dassl", variableFilter = ".*"));
 end TestStack_with_resistor_control_OER_both;
